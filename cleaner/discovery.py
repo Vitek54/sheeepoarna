@@ -257,8 +257,8 @@ def parse_user_ids_by_role(
                 uid = user.get("id")
                 if uid:
                     user_ids.append(uid)
-        after = (batch[-1].get("user") or {}).get("id", "0")
-        if len(batch) < 1000:
+        after = (batch[-1].get("user") or {}).get("id")
+        if not after or len(batch) < 1000:
             break
     return user_ids
 

@@ -354,3 +354,14 @@ def test_parse_user_ids_by_role_skips_member_without_user() -> None:
     ]
     result = parse_user_ids_by_role(client, "g1", "r1")
     assert result == ["u2"]
+
+
+def test_parse_user_ids_by_role_stops_when_last_member_has_no_user_id() -> None:
+    client = MagicMock()
+    batch = [{"user": {"id": f"u{i}"}, "roles": ["r1"]} for i in range(999)]
+    batch.append({"roles": ["r1"]})  # last member has no user.id
+    assert len(batch) == 1000
+    client.guild_members.return_value = batch
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert len(result) == 999
+    assert client.guild_members.call_count == 1
