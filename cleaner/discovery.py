@@ -228,6 +228,41 @@ def dm_label(channel: dict) -> str:
     return f"dm {channel.get('id')}"
 
 
+def parse_user_ids_by_role(
+    client: DiscordClient, guild_id: str, role_id: str
+) -> list[str]:
+    """Return Discord user IDs of all members who have ``role_id``.
+
+    Paginates through ``GET /guilds/{guild_id}/members`` (up to 1000 per
+    page) and collects every member whose ``roles`` list contains
+    ``role_id``.
+    """
+    user_ids: list[str] = []
+    after = "0"
+    while True:
+        try:
+            batch = client.guild_members(guild_id, after=after)
+        except (Forbidden, NotFound):
+            log.warning(
+                "cannot list members for guild %s (forbidden/not found)",
+                guild_id,
+            )
+            break
+        if not batch:
+            break
+        for member in batch:
+            roles: list[str] = member.get("roles", [])
+            if role_id in roles:
+                user = member.get("user") or {}
+                uid = user.get("id")
+                if uid:
+                    user_ids.append(uid)
+        after = (batch[-1].get("user") or {}).get("id", "0")
+        if len(batch) < 1000:
+            break
+    return user_ids
+
+
 def guild_text_channel_ids(client: DiscordClient, guild_id: str) -> list[str]:
     """Used when guild search is unavailable (very rare)."""
     try:

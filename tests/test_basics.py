@@ -11,7 +11,7 @@ import pytest
 
 from cleaner.api import DiscordClient, DiscordError, Forbidden, NotFound
 from cleaner.deleter import _attempt_delete, _err_code, _err_message
-from cleaner.discovery import _flatten_search_hits, is_deletable
+from cleaner.discovery import _flatten_search_hits, is_deletable, parse_user_ids_by_role
 from cleaner.state import RunState
 
 
@@ -295,3 +295,62 @@ def test_attempt_delete_thread_archived_no_double_unarchive() -> None:
     assert out.kind == "failed"
     assert out.code == 50083
     client.edit_channel.assert_not_called()
+
+
+# ----------------------------------------------------------------------
+# parse_user_ids_by_role
+
+
+def test_parse_user_ids_by_role_filters_by_role() -> None:
+    client = MagicMock()
+    client.guild_members.return_value = [
+        {"user": {"id": "u1"}, "roles": ["r1", "r2"]},
+        {"user": {"id": "u2"}, "roles": ["r3"]},
+        {"user": {"id": "u3"}, "roles": ["r1"]},
+    ]
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == ["u1", "u3"]
+
+
+def test_parse_user_ids_by_role_empty_when_no_match() -> None:
+    client = MagicMock()
+    client.guild_members.return_value = [
+        {"user": {"id": "u1"}, "roles": ["r2"]},
+    ]
+    result = parse_user_ids_by_role(client, "g1", "r999")
+    assert result == []
+
+
+def test_parse_user_ids_by_role_paginates() -> None:
+    client = MagicMock()
+    page1 = [{"user": {"id": f"u{i}"}, "roles": ["target"]} for i in range(1000)]
+    page2 = [{"user": {"id": "u_last"}, "roles": ["target"]}]
+    client.guild_members.side_effect = [page1, page2]
+    result = parse_user_ids_by_role(client, "g1", "target")
+    assert len(result) == 1001
+    assert result[-1] == "u_last"
+    assert client.guild_members.call_count == 2
+
+
+def test_parse_user_ids_by_role_handles_forbidden() -> None:
+    client = MagicMock()
+    client.guild_members.side_effect = Forbidden(403, {"message": "Missing Access"})
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == []
+
+
+def test_parse_user_ids_by_role_handles_not_found() -> None:
+    client = MagicMock()
+    client.guild_members.side_effect = NotFound(404, {"message": "Unknown Guild"})
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == []
+
+
+def test_parse_user_ids_by_role_skips_member_without_user() -> None:
+    client = MagicMock()
+    client.guild_members.return_value = [
+        {"roles": ["r1"]},
+        {"user": {"id": "u2"}, "roles": ["r1"]},
+    ]
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == ["u2"]

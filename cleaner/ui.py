@@ -99,6 +99,7 @@ def main_menu(account_label: str) -> str:
         ("2", "delete messages in a specific channel / dm"),
         ("3", "delete messages on all servers only"),
         ("4", "delete messages on a specific server"),
+        ("5", "parse user ids by role"),
         ("0", "exit"),
     ]
     for k, v in options:
