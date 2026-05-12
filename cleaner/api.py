@@ -332,6 +332,11 @@ class DiscordClient:
             "GET", f"/guilds/{guild_id}/members", params=params
         )
 
+    def role_member_ids(self, guild_id: str, role_id: str) -> list[str]:
+        return self.request(
+            "GET", f"/guilds/{guild_id}/roles/{role_id}/member-ids"
+        )
+
 
 def _safe_json(resp: requests.Response) -> Any:
     try:

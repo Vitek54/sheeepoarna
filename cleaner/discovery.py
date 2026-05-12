@@ -233,10 +233,24 @@ def parse_user_ids_by_role(
 ) -> list[str]:
     """Return Discord user IDs of all members who have ``role_id``.
 
-    Paginates through ``GET /guilds/{guild_id}/members`` (up to 1000 per
-    page) and collects every member whose ``roles`` list contains
-    ``role_id``.
+    Tries ``GET /guilds/{guild_id}/roles/{role_id}/member-ids`` first
+    (works without special permissions). Falls back to paginating
+    ``GET /guilds/{guild_id}/members`` if the direct endpoint fails.
     """
+    try:
+        ids = client.role_member_ids(guild_id, role_id)
+        if isinstance(ids, list):
+            return [str(uid) for uid in ids]
+    except (Forbidden, NotFound):
+        log.info(
+            "role_member_ids unavailable for guild %s role %s, "
+            "falling back to guild_members",
+            guild_id,
+            role_id,
+        )
+    except Exception:  # noqa: BLE001
+        log.info("role_member_ids failed, falling back to guild_members")
+
     user_ids: list[str] = []
     after = "0"
     while True:
