@@ -311,6 +311,15 @@ class DiscordClient:
             "DELETE", f"/channels/{channel_id}/messages/{message_id}"
         )
 
+    def edit_channel(self, channel_id: str, **fields: Any) -> dict:
+        """PATCH /channels/{id} — used to unarchive threads."""
+        return self.request(
+            "PATCH", f"/channels/{channel_id}", json=fields
+        )
+
+    def get_channel(self, channel_id: str) -> dict:
+        return self.request("GET", f"/channels/{channel_id}")
+
 
 def _safe_json(resp: requests.Response) -> Any:
     try:

@@ -83,7 +83,7 @@ def run_everywhere(client: DiscordClient, user_id: str) -> None:
     state = maybe_resume(state_path, user_id, "everywhere")
     scopes = deleter.build_scopes_everywhere(client, user_id)
     with ui.progress_display() as progress:
-        deleter.run(client, state, scopes, progress=progress)
+        deleter.run(client, state, scopes, user_id, progress=progress)
     ui.info(
         f"done: deleted={state.deleted} skipped={state.skipped} failed={state.failed}"
     )
@@ -99,7 +99,7 @@ def run_servers(client: DiscordClient, user_id: str) -> None:
     state = maybe_resume(state_path, user_id, "servers")
     scopes = deleter.build_scopes_servers(client, user_id)
     with ui.progress_display() as progress:
-        deleter.run(client, state, scopes, progress=progress)
+        deleter.run(client, state, scopes, user_id, progress=progress)
     ui.info(
         f"done: deleted={state.deleted} skipped={state.skipped} failed={state.failed}"
     )
@@ -122,7 +122,7 @@ def run_specific_server(client: DiscordClient, user_id: str) -> None:
     state = maybe_resume(state_path, user_id, "server", chosen["id"])
     scope = deleter.build_scope_single_guild(client, user_id, chosen)
     with ui.progress_display() as progress:
-        deleter.run(client, state, [scope], progress=progress)
+        deleter.run(client, state, [scope], user_id, progress=progress)
     ui.info(
         f"done: deleted={state.deleted} skipped={state.skipped} failed={state.failed}"
     )
@@ -191,7 +191,7 @@ def run_specific_channel(client: DiscordClient, user_id: str) -> None:
         is_guild_channel=is_guild_channel,
     )
     with ui.progress_display() as progress:
-        deleter.run(client, state, [scope], progress=progress)
+        deleter.run(client, state, [scope], user_id, progress=progress)
     ui.info(
         f"done: deleted={state.deleted} skipped={state.skipped} failed={state.failed}"
     )

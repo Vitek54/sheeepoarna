@@ -7,4 +7,5 @@ venv/
 .env
 .DS_Store
 state.json
+failures.json
 *.log
