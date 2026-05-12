@@ -23,6 +23,7 @@ from cleaner.discovery import (
     guild_text_channel_ids,  # noqa: F401 — exported for future use
     list_dm_channels,
     list_guilds,
+    parse_user_ids_by_role,
 )
 from cleaner.state import RunState
 
@@ -197,6 +198,28 @@ def run_specific_channel(client: DiscordClient, user_id: str) -> None:
     )
 
 
+def run_parse_role_users(client: DiscordClient) -> None:
+    guilds = list_guilds(client)
+    if not guilds:
+        ui.warn("you are not in any servers")
+        return
+    chosen = ui.pick(guilds, title="pick a server", label_key="name")
+    if not chosen:
+        return
+    role_id = ui.ask_text("role id (numeric snowflake)")
+    if not role_id.isdigit():
+        ui.error("role id must be a numeric snowflake")
+        return
+    ui.info(f"fetching members with role {role_id} in '{chosen.get('name')}'...")
+    user_ids = parse_user_ids_by_role(client, chosen["id"], role_id)
+    if not user_ids:
+        ui.warn("no members found with that role")
+        return
+    ui.section(f"found {len(user_ids)} user(s)")
+    for uid in user_ids:
+        ui.info(uid)
+
+
 def main() -> int:
     setup_logging()
     ui.clear()
@@ -216,6 +239,8 @@ def main() -> int:
                 run_servers(client, user_id)
             elif choice == "4":
                 run_specific_server(client, user_id)
+            elif choice == "5":
+                run_parse_role_users(client)
             elif choice == "0":
                 ui.goodbye()
                 return 0

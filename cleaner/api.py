@@ -320,6 +320,23 @@ class DiscordClient:
     def get_channel(self, channel_id: str) -> dict:
         return self.request("GET", f"/channels/{channel_id}")
 
+    def guild_members(
+        self,
+        guild_id: str,
+        *,
+        after: str = "0",
+        limit: int = 1000,
+    ) -> list[dict]:
+        params: dict[str, Any] = {"limit": min(limit, 1000), "after": after}
+        return self.request(
+            "GET", f"/guilds/{guild_id}/members", params=params
+        )
+
+    def role_member_ids(self, guild_id: str, role_id: str) -> list[str]:
+        return self.request(
+            "GET", f"/guilds/{guild_id}/roles/{role_id}/member-ids"
+        )
+
 
 def _safe_json(resp: requests.Response) -> Any:
     try:

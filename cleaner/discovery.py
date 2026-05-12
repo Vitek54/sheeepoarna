@@ -228,6 +228,55 @@ def dm_label(channel: dict) -> str:
     return f"dm {channel.get('id')}"
 
 
+def parse_user_ids_by_role(
+    client: DiscordClient, guild_id: str, role_id: str
+) -> list[str]:
+    """Return Discord user IDs of all members who have ``role_id``.
+
+    Tries ``GET /guilds/{guild_id}/roles/{role_id}/member-ids`` first
+    (works without special permissions). Falls back to paginating
+    ``GET /guilds/{guild_id}/members`` if the direct endpoint fails.
+    """
+    try:
+        ids = client.role_member_ids(guild_id, role_id)
+        if isinstance(ids, list):
+            return [str(uid) for uid in ids]
+    except (Forbidden, NotFound):
+        log.info(
+            "role_member_ids unavailable for guild %s role %s, "
+            "falling back to guild_members",
+            guild_id,
+            role_id,
+        )
+    except Exception:  # noqa: BLE001
+        log.info("role_member_ids failed, falling back to guild_members")
+
+    user_ids: list[str] = []
+    after = "0"
+    while True:
+        try:
+            batch = client.guild_members(guild_id, after=after)
+        except (Forbidden, NotFound):
+            log.warning(
+                "cannot list members for guild %s (forbidden/not found)",
+                guild_id,
+            )
+            break
+        if not batch:
+            break
+        for member in batch:
+            roles: list[str] = member.get("roles", [])
+            if role_id in roles:
+                user = member.get("user") or {}
+                uid = user.get("id")
+                if uid:
+                    user_ids.append(uid)
+        after = (batch[-1].get("user") or {}).get("id")
+        if not after or len(batch) < 1000:
+            break
+    return user_ids
+
+
 def guild_text_channel_ids(client: DiscordClient, guild_id: str) -> list[str]:
     """Used when guild search is unavailable (very rare)."""
     try:

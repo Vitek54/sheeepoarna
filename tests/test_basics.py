@@ -11,7 +11,7 @@ import pytest
 
 from cleaner.api import DiscordClient, DiscordError, Forbidden, NotFound
 from cleaner.deleter import _attempt_delete, _err_code, _err_message
-from cleaner.discovery import _flatten_search_hits, is_deletable
+from cleaner.discovery import _flatten_search_hits, is_deletable, parse_user_ids_by_role
 from cleaner.state import RunState
 
 
@@ -295,3 +295,93 @@ def test_attempt_delete_thread_archived_no_double_unarchive() -> None:
     assert out.kind == "failed"
     assert out.code == 50083
     client.edit_channel.assert_not_called()
+
+
+# ----------------------------------------------------------------------
+# parse_user_ids_by_role — primary path (role_member_ids endpoint)
+
+
+def test_parse_user_ids_by_role_uses_direct_endpoint() -> None:
+    client = MagicMock()
+    client.role_member_ids.return_value = ["u1", "u3"]
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == ["u1", "u3"]
+    client.guild_members.assert_not_called()
+
+
+def test_parse_user_ids_by_role_direct_empty() -> None:
+    client = MagicMock()
+    client.role_member_ids.return_value = []
+    result = parse_user_ids_by_role(client, "g1", "r999")
+    assert result == []
+
+
+# ----------------------------------------------------------------------
+# parse_user_ids_by_role — fallback path (guild_members pagination)
+
+
+def _client_with_role_member_ids_failing(side_effect=None):
+    client = MagicMock()
+    client.role_member_ids.side_effect = side_effect or Forbidden(
+        403, {"message": "Missing Access"}
+    )
+    return client
+
+
+def test_parse_user_ids_by_role_fallback_filters_by_role() -> None:
+    client = _client_with_role_member_ids_failing()
+    client.guild_members.return_value = [
+        {"user": {"id": "u1"}, "roles": ["r1", "r2"]},
+        {"user": {"id": "u2"}, "roles": ["r3"]},
+        {"user": {"id": "u3"}, "roles": ["r1"]},
+    ]
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == ["u1", "u3"]
+
+
+def test_parse_user_ids_by_role_fallback_paginates() -> None:
+    client = _client_with_role_member_ids_failing()
+    page1 = [{"user": {"id": f"u{i}"}, "roles": ["target"]} for i in range(1000)]
+    page2 = [{"user": {"id": "u_last"}, "roles": ["target"]}]
+    client.guild_members.side_effect = [page1, page2]
+    result = parse_user_ids_by_role(client, "g1", "target")
+    assert len(result) == 1001
+    assert result[-1] == "u_last"
+    assert client.guild_members.call_count == 2
+
+
+def test_parse_user_ids_by_role_fallback_handles_forbidden() -> None:
+    client = _client_with_role_member_ids_failing()
+    client.guild_members.side_effect = Forbidden(403, {"message": "Missing Access"})
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == []
+
+
+def test_parse_user_ids_by_role_fallback_handles_not_found() -> None:
+    client = _client_with_role_member_ids_failing(
+        NotFound(404, {"message": "Unknown Guild"})
+    )
+    client.guild_members.side_effect = NotFound(404, {"message": "Unknown Guild"})
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == []
+
+
+def test_parse_user_ids_by_role_fallback_skips_member_without_user() -> None:
+    client = _client_with_role_member_ids_failing()
+    client.guild_members.return_value = [
+        {"roles": ["r1"]},
+        {"user": {"id": "u2"}, "roles": ["r1"]},
+    ]
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert result == ["u2"]
+
+
+def test_parse_user_ids_by_role_fallback_stops_when_cursor_missing() -> None:
+    client = _client_with_role_member_ids_failing()
+    batch = [{"user": {"id": f"u{i}"}, "roles": ["r1"]} for i in range(999)]
+    batch.append({"roles": ["r1"]})  # last member has no user.id
+    assert len(batch) == 1000
+    client.guild_members.return_value = batch
+    result = parse_user_ids_by_role(client, "g1", "r1")
+    assert len(result) == 999
+    assert client.guild_members.call_count == 1
