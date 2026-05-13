@@ -1,0 +1,16 @@
+[project]
+name = "discord-retention-tool"
+version = "0.1.0"
+description = "Compliant Discord bot-token retention utility for local logs and bot-authored messages."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+tui = ["rich>=13.0.0"]
+
+[project.scripts]
+discord-retention = "discord_retention_tool.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
