@@ -39,6 +39,23 @@ def build_parser() -> argparse.ArgumentParser:
     cleanup.add_argument("--base-delay", type=float, default=1.0)
     cleanup.add_argument("--max-delay", type=float, default=120.0)
 
+    role_members = subcommands.add_parser(
+        "role-members",
+        help="Export visible user IDs assigned to a role ID using the bot API.",
+    )
+    role_members.add_argument("--bot-token", default=os.getenv("DISCORD_BOT_TOKEN"), help="Bot token or DISCORD_BOT_TOKEN.")
+    role_members.add_argument("--guild-id", required=True, help="Guild/server ID to scan.")
+    role_members.add_argument("--role-id", required=True, help="Role ID to match.")
+    role_members.add_argument("--output", type=Path, help="Write one user ID per line to this file.")
+    role_members.add_argument(
+        "--no-validate-role",
+        action="store_true",
+        help="Skip the initial guild role existence check and scan members directly.",
+    )
+    role_members.add_argument("--max-retries", type=int, default=8)
+    role_members.add_argument("--base-delay", type=float, default=1.0)
+    role_members.add_argument("--max-delay", type=float, default=120.0)
+
     subcommands.add_parser("reporting-note", help="Explain why automated Report V3 is not implemented.")
     return parser
 
@@ -81,6 +98,18 @@ def main(argv: list[str] | None = None) -> int:
             stats = manager.cleanup_bot_messages(args.channel_id, dry_run=args.dry_run)
         else:
             raise SystemExit("Provide --channel-id at least once or --guild-id.")
+        ui.summary(asdict(stats))
+        return 0
+
+    if args.command == "role-members":
+        client = _client_from_args(args)
+        manager = RetentionManager(client=client, ui=ui)
+        stats = manager.parse_role_member_ids(
+            args.guild_id,
+            args.role_id,
+            output_path=args.output,
+            validate_role=not args.no_validate_role,
+        )
         ui.summary(asdict(stats))
         return 0
 

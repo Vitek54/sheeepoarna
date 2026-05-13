@@ -71,6 +71,29 @@ Process all supported text-like channels in a guild visible to the bot:
 discord-retention cleanup --guild-id 123456789012345678 --dry-run
 ```
 
+
+## Parse user IDs by role ID
+
+You can export IDs of members that are visible to your bot and currently have a
+specific role. This is not a permission bypass: the bot must be in the guild and
+Discord must allow it to list members. For complete results in larger guilds,
+enable the privileged Server Members Intent for the application in the Discord
+Developer Portal. Discord caps the REST member-list endpoint at 1,000 members
+per page, so the command uses the fastest supported page size and walks pages
+with `after`; it cannot be truly instant for very large servers.
+
+```bash
+discord-retention role-members \
+  --guild-id 123456789012345678 \
+  --role-id 987654321098765432 \
+  --output role-member-ids.txt
+```
+
+If the role check says no members were found, first verify that you copied the
+role ID, not a channel/user ID, and that the bot has member-list access. Use
+`--no-validate-role` only when you know the role exists but the initial role
+metadata request is unavailable.
+
 ## Rate limits and reliability
 
 The client reads `Retry-After` response headers and JSON `retry_after` fields,

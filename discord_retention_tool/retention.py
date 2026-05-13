@@ -22,6 +22,15 @@ class CleanupStats:
 
 
 @dataclass(slots=True)
+class RoleMemberParseStats:
+    guild_id: str
+    role_id: str
+    scanned: int = 0
+    matched: int = 0
+    output_path: str = ""
+
+
+@dataclass(slots=True)
 class RetentionManager:
     client: DiscordClient | None = None
     ui: SlateUI = field(default_factory=SlateUI)
@@ -61,6 +70,49 @@ class RetentionManager:
             raise ValueError("Discord client is required for API cleanup.")
         channels = self.client.text_channel_ids_for_guild(guild_id)
         return self.cleanup_bot_messages(channels, dry_run=dry_run)
+
+    def parse_role_member_ids(
+        self,
+        guild_id: str,
+        role_id: str,
+        *,
+        output_path: Path | None = None,
+        validate_role: bool = True,
+    ) -> RoleMemberParseStats:
+        """Collect visible Discord user IDs assigned to a specific role ID.
+
+        This uses Discord's bot REST API and cannot bypass missing guild access,
+        missing privileged member intent, or Discord API limits.
+        """
+
+        if self.client is None:
+            raise ValueError("Discord client is required for role member parsing.")
+        stats = RoleMemberParseStats(guild_id=str(guild_id), role_id=str(role_id))
+        handle = output_path.open("w", encoding="utf-8") if output_path is not None else None
+        try:
+            if validate_role and not self.client.guild_has_role(guild_id, role_id):
+                self.ui.warn(f"Role {role_id} was not found in guild {guild_id}")
+                return stats
+            self.ui.info(f"Parsing visible members in guild {guild_id} for role {role_id}")
+            for member in self.client.iter_guild_members(guild_id):
+                stats.scanned += 1
+                roles = {str(role) for role in member.get("roles", [])}
+                if str(role_id) not in roles:
+                    continue
+                user = member.get("user") or {}
+                user_id = user.get("id")
+                if user_id is None:
+                    continue
+                stats.matched += 1
+                if handle is not None:
+                    handle.write(f"{user_id}\n")
+                else:
+                    self.ui.info(str(user_id))
+        finally:
+            if handle is not None:
+                handle.close()
+                stats.output_path = str(output_path)
+        return stats
 
     def prune_local_log(self, path: Path, *, days: int, timestamp_field: str = "timestamp") -> RetentionStats:
         self.ui.info(f"Applying {days}-day retention to {path}")

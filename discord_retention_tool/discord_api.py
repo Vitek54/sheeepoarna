@@ -160,6 +160,70 @@ class DiscordClient:
         self.request("DELETE", f"/channels/{channel_id}/messages/{message_id}")
         return len(self.second_pass) == queued_before
 
+    def get_guild_roles(self, guild_id: str) -> list[dict[str, Any]]:
+        roles = self.request("GET", f"/guilds/{guild_id}/roles")
+        if roles is None and self.second_pass:
+            raise DiscordAPIError(
+                "Unable to list guild roles. Ensure the bot is in the guild "
+                "and can read guild role metadata."
+            )
+        if not isinstance(roles, list):
+            return []
+        return roles
+
+    def guild_has_role(self, guild_id: str, role_id: str) -> bool:
+        return any(str(role.get("id")) == str(role_id) for role in self.get_guild_roles(guild_id))
+
+    def iter_guild_members(self, guild_id: str, *, limit: int = 1000) -> Iterable[dict[str, Any]]:
+        """Yield guild members with REST pagination through the `after` parameter.
+
+        Discord caps this endpoint at 1,000 members per request. The bot must be
+        in the guild and, for complete large-guild results, must have the
+        privileged Server Members Intent enabled in the Developer Portal. This is
+        intentionally not a permission bypass.
+        """
+
+        after = "0"
+        page_limit = min(max(limit, 1), 1000)
+        while True:
+            query = urllib.parse.urlencode({"limit": str(page_limit), "after": after})
+            batch = self.request("GET", f"/guilds/{guild_id}/members?{query}")
+            if batch is None and self.second_pass:
+                raise DiscordAPIError(
+                    "Unable to list guild members. Ensure the bot is in the guild "
+                    "and has the required members access/intent."
+                )
+            if not batch:
+                break
+            if not isinstance(batch, list):
+                raise DiscordAPIError(f"Unexpected members response for guild {guild_id}: {batch!r}")
+            for member in batch:
+                yield member
+            if len(batch) < page_limit:
+                break
+            user = batch[-1].get("user") or {}
+            if "id" not in user:
+                raise DiscordAPIError(f"Guild member page for {guild_id} did not include a user id.")
+            after = str(user["id"])
+
+    def iter_role_member_ids(self, guild_id: str, role_id: str, *, validate_role: bool = True) -> Iterable[str]:
+        """Yield user IDs for guild members that currently have `role_id`."""
+
+        if validate_role and not self.guild_has_role(guild_id, role_id):
+            raise DiscordAPIError(f"Role {role_id} was not found in guild {guild_id}.")
+        for member in self.iter_guild_members(guild_id):
+            roles = {str(role) for role in member.get("roles", [])}
+            if str(role_id) in roles:
+                user = member.get("user") or {}
+                user_id = user.get("id")
+                if user_id is not None:
+                    yield str(user_id)
+
+    def collect_role_member_ids(self, guild_id: str, role_id: str, *, validate_role: bool = True) -> list[str]:
+        """Return all visible user IDs that have `role_id`."""
+
+        return list(self.iter_role_member_ids(guild_id, role_id, validate_role=validate_role))
+
     def get_guild_channels(self, guild_id: str) -> list[dict[str, Any]]:
         channels = self.request("GET", f"/guilds/{guild_id}/channels")
         if not isinstance(channels, list):
