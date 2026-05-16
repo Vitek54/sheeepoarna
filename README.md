@@ -96,10 +96,35 @@ pip install -r requirements.txt
 - `httpx` — асинхронный HTTP клиент
 - `rich` — красивый вывод в терминал
 
+## Структура проекта
+
+```
+discord_tool/
+├── __init__.py          # Версия пакета
+├── __main__.py          # Entry point: python -m discord_tool
+├── app.py               # Главный цикл меню
+├── core/
+│   ├── client.py        # HTTP клиент с rate limiting
+│   ├── config.py        # Константы, тема, console
+│   └── utils.py         # Утилиты (snowflake_time, permissions)
+├── services/
+│   └── tool.py          # SelfTool — все операции с Discord API
+├── handlers/
+│   ├── deletion.py      # Удаление сообщений (5 режимов)
+│   ├── parsing.py       # Парсинг ролей, поиск, lookup
+│   ├── account.py       # Управление аккаунтом (13 функций)
+│   ├── guilds.py        # Серверные операции (7 функций)
+│   ├── friends.py       # Друзья (7 функций)
+│   └── utilities.py     # Утилиты (3 функции)
+└── ui/
+    ├── components.py    # Логотип, меню, таблицы
+    └── prompts.py       # Интерактивные промпты
+```
+
 ## Запуск
 
 ```bash
-python discord_tool.py
+python -m discord_tool
 ```
 
 При запуске вводишь свой Discord токен → открывается чёрно-белое минималистичное меню.
