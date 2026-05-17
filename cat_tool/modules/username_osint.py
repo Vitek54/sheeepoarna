@@ -15,6 +15,7 @@ import asyncio
 from typing import Optional
 
 import aiohttp
+from bs4 import BeautifulSoup
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
 from rich.table import Table
@@ -343,6 +344,68 @@ def extract_devto_data(username: str) -> dict:
     return result
 
 
+def extract_vk_data(username: str) -> dict:
+    """Extract profile data from VK."""
+    result = {}
+    try:
+        resp = get(f"https://vk.com/{username}", timeout=12)
+        if resp and resp.status_code == 200:
+            body = resp.text
+            if 'class="page_name"' in body or 'class="op_header"' in body:
+                soup = BeautifulSoup(body, "html.parser")
+                name_el = soup.select_one(".page_name, h1.op_header, h2.op_header")
+                if name_el:
+                    result["Name"] = name_el.get_text(strip=True)
+                status_el = soup.select_one(".current_text, .pp_status")
+                if status_el:
+                    status = status_el.get_text(strip=True)[:200]
+                    if status:
+                        result["Status"] = status
+                photo_el = soup.select_one(".page_avatar_img, img.pp_img")
+                if photo_el and photo_el.get("src"):
+                    result["Photo"] = photo_el["src"]
+                info_rows = soup.select(".profile_info_row, .pp_info_row")
+                for row in info_rows[:10]:
+                    label_el = row.select_one(".label, .pp_info_label")
+                    value_el = row.select_one(".labeled, .pp_info_value")
+                    if label_el and value_el:
+                        label = label_el.get_text(strip=True).rstrip(":")
+                        value = value_el.get_text(strip=True)[:200]
+                        if label and value:
+                            result[label] = value
+                result["URL"] = f"https://vk.com/{username}"
+    except Exception:
+        pass
+    return result
+
+
+def extract_telegram_data(username: str) -> dict:
+    """Extract profile data from Telegram t.me page."""
+    result = {}
+    try:
+        resp = get(f"https://t.me/{username}", timeout=10)
+        if resp and resp.status_code == 200:
+            body = resp.text
+            if "tgme_page_title" in body or 'class="tgme_page_photo_image"' in body:
+                soup = BeautifulSoup(body, "html.parser")
+                title_el = soup.select_one(".tgme_page_title span")
+                if title_el:
+                    result["Name"] = title_el.get_text(strip=True)
+                desc_el = soup.select_one(".tgme_page_description")
+                if desc_el:
+                    result["Bio"] = desc_el.get_text(strip=True)[:300]
+                photo_el = soup.select_one(".tgme_page_photo_image")
+                if photo_el and photo_el.get("src"):
+                    result["Avatar"] = photo_el["src"]
+                extra_el = soup.select_one(".tgme_page_extra")
+                if extra_el:
+                    result["Extra"] = extra_el.get_text(strip=True)
+                result["URL"] = f"https://t.me/{username}"
+    except Exception:
+        pass
+    return result
+
+
 PROFILE_EXTRACTORS = {
     "GitHub": extract_github_data,
     "Reddit": extract_reddit_data,
@@ -352,6 +415,8 @@ PROFILE_EXTRACTORS = {
     "Keybase": extract_keybase_data,
     "Hackernews": extract_hackernews_data,
     "Dev.to": extract_devto_data,
+    "VK": extract_vk_data,
+    "Telegram": extract_telegram_data,
 }
 
 

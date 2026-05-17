@@ -381,15 +381,213 @@ def generate_phone_osint_links(phone_e164: str, digits: str) -> dict:
     }
 
 
+def check_phone_leaks(phone_e164: str) -> dict:
+    """Check phone number in leak/breach databases."""
+    result = {"found": False, "sources": [], "personal_data": {}}
+    clean = phone_e164.lstrip("+")
+
+    try:
+        resp = get(f"https://api.xposedornot.com/v1/check-email/{clean}", timeout=10)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            breaches = data.get("breaches", [])
+            if breaches:
+                result["found"] = True
+                for b in breaches[:20]:
+                    if isinstance(b, str):
+                        result["sources"].append({"name": b, "source": "XposedOrNot"})
+                    elif isinstance(b, dict):
+                        result["sources"].append({
+                            "name": b.get("name", "Unknown"),
+                            "source": "XposedOrNot",
+                            "date": b.get("date", "N/A"),
+                            "data_types": b.get("data_types", "N/A"),
+                        })
+    except Exception:
+        pass
+
+    try:
+        resp = get(
+            f"https://api.xposedornot.com/v1/breach-analytics?email={clean}",
+            timeout=10,
+        )
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            exposed = data.get("ExposedBreaches", {})
+            if exposed:
+                breaches_details = exposed.get("breaches_details", [])
+                for bd in breaches_details[:15]:
+                    if isinstance(bd, dict):
+                        result["sources"].append({
+                            "name": bd.get("breach", "Unknown"),
+                            "source": "XposedOrNot Analytics",
+                            "domain": bd.get("domain", "N/A"),
+                            "date": bd.get("xposed_date", "N/A"),
+                            "data_types": bd.get("xposed_data", "N/A"),
+                            "records": str(bd.get("xposed_records", "N/A")),
+                        })
+                        result["found"] = True
+                paste_summary = data.get("PastesSummary", {})
+                if paste_summary and paste_summary.get("cnt"):
+                    result["personal_data"]["Pastes Found"] = str(paste_summary.get("cnt", 0))
+    except Exception:
+        pass
+
+    try:
+        headers = {**DEFAULT_HEADERS, "Accept": "application/json"}
+        resp = get(
+            f"https://leak-lookup.com/api/search",
+            timeout=10,
+            headers=headers,
+        )
+    except Exception:
+        pass
+
+    return result
+
+
+def check_vk_by_phone(phone_e164: str) -> dict:
+    """Search VK for profiles linked to this phone number."""
+    result = {"found": False, "profiles": [], "data": {}}
+    clean = phone_e164.lstrip("+")
+
+    try:
+        from bs4 import BeautifulSoup
+        search_url = f"https://vk.com/search?c%5Bsection%5D=people&c%5Bq%5D={phone_e164}"
+        resp = get(search_url, timeout=12)
+        if resp and resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            people = soup.select(".people_row, .si_body")
+            if people:
+                result["found"] = True
+                for person in people[:5]:
+                    name_el = person.select_one(".si_owner a, .people_cell a")
+                    if name_el:
+                        profile = {
+                            "name": name_el.get_text(strip=True),
+                            "url": "https://vk.com" + name_el.get("href", "") if name_el.get("href", "").startswith("/") else name_el.get("href", ""),
+                        }
+                        img_el = person.select_one("img")
+                        if img_el and img_el.get("src"):
+                            profile["photo"] = img_el["src"]
+                        result["profiles"].append(profile)
+    except Exception:
+        pass
+
+    try:
+        resp = get(f"https://www.google.com/search?q=site:vk.com+%22{phone_e164}%22", timeout=10)
+        if resp and resp.status_code == 200:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(resp.text, "html.parser")
+            links = soup.select("a[href*='vk.com']")
+            for link in links[:5]:
+                href = link.get("href", "")
+                if "vk.com" in href and href not in [p.get("url") for p in result["profiles"]]:
+                    result["profiles"].append({"name": link.get_text(strip=True)[:100], "url": href})
+                    result["found"] = True
+    except Exception:
+        pass
+
+    return result
+
+
+def check_getcontact_info(phone_e164: str) -> dict:
+    """Try to get caller names from GetContact-style services."""
+    result = {"names": [], "tags": []}
+    clean = phone_e164.lstrip("+")
+
+    try:
+        from bs4 import BeautifulSoup
+        resp = get(f"https://www.neberitrubku.ru/nomer-telefona/{clean}", timeout=10)
+        if resp and resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            name_els = soup.select(".phone-owner-name, .caller-name, h1")
+            for el in name_els:
+                name = el.get_text(strip=True)
+                if name and len(name) > 2 and name not in result["names"] and clean not in name:
+                    result["names"].append(name[:100])
+
+            comment_els = soup.select(".review-text, .comment-text, .review-body")
+            for el in comment_els[:10]:
+                text = el.get_text(strip=True)[:200]
+                if text:
+                    result["tags"].append(text)
+    except Exception:
+        pass
+
+    try:
+        from bs4 import BeautifulSoup
+        resp = get(f"https://kto-zvonil.net/nomer/{clean}/", timeout=10)
+        if resp and resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            name_el = soup.select_one(".phone-owner, .caller-info, h1")
+            if name_el:
+                name = name_el.get_text(strip=True)
+                if name and len(name) > 2 and name not in result["names"]:
+                    result["names"].append(name[:100])
+            comments = soup.select(".comment-text, .review")
+            for c in comments[:5]:
+                text = c.get_text(strip=True)[:200]
+                if text and text not in result["tags"]:
+                    result["tags"].append(text)
+    except Exception:
+        pass
+
+    try:
+        from bs4 import BeautifulSoup
+        resp = get(f"https://phone-num.com/phone/{phone_e164}/", timeout=10)
+        if resp and resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, "html.parser")
+            info_els = soup.select(".phone-info, .caller-data, .owner-name")
+            for el in info_els:
+                text = el.get_text(strip=True)[:100]
+                if text and text not in result["names"]:
+                    result["names"].append(text)
+    except Exception:
+        pass
+
+    return result
+
+
+def check_phone_social_profiles(phone_e164: str) -> dict:
+    """Search for social profiles linked to the phone number."""
+    result = {"profiles": []}
+    clean = phone_e164.lstrip("+")
+
+    searches = [
+        {"name": "OK.ru", "url": f"https://ok.ru/search?st.query={phone_e164}&st.cmd=searchResult&st.mode=Users"},
+        {"name": "Mail.ru", "url": f"https://go.mail.ru/search?q=%22{phone_e164}%22"},
+        {"name": "Yandex People", "url": f"https://yandex.ru/search/?text=%22{phone_e164}%22+site:ok.ru+OR+site:vk.com"},
+    ]
+
+    for search in searches:
+        try:
+            resp = get(search["url"], timeout=10)
+            if resp and resp.status_code == 200:
+                result["profiles"].append({
+                    "platform": search["name"],
+                    "url": search["url"],
+                    "accessible": True,
+                })
+        except Exception:
+            result["profiles"].append({
+                "platform": search["name"],
+                "url": search["url"],
+                "accessible": False,
+            })
+
+    return result
+
+
 def check_phone_reputation(phone_e164: str) -> dict:
     """Check phone reputation via free APIs."""
     result = {"spam_reports": 0, "data": {}}
     clean = phone_e164.lstrip("+")
 
     try:
+        from bs4 import BeautifulSoup
         resp = get(f"https://www.neberitrubku.ru/nomer-telefona/{clean}", timeout=10)
         if resp and resp.status_code == 200:
-            from bs4 import BeautifulSoup
             soup = BeautifulSoup(resp.text, "html.parser")
             rating_el = soup.select_one(".rating-value, .phone-rating")
             if rating_el:
@@ -425,7 +623,7 @@ def run_phone_scan(phone_input: str):
         BarColumn(bar_width=30, style="cyan", complete_style="bright_cyan"),
         console=console,
     ) as progress:
-        main_task = progress.add_task("Phone Intelligence Scan", total=7)
+        main_task = progress.add_task("Phone Intelligence Scan", total=12)
 
         progress.update(main_task, description="Analyzing number format...")
         carrier = detect_carrier(phone_data["prefix"])
@@ -444,6 +642,22 @@ def run_phone_scan(phone_input: str):
         async_results = run_async(run_phone_checks_async(phone_data["e164"]))
         progress.advance(main_task)
 
+        progress.update(main_task, description="Searching leak databases...")
+        leaks = check_phone_leaks(phone_data["e164"])
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Searching VK by phone...")
+        vk_results = check_vk_by_phone(phone_data["e164"])
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Checking caller ID services...")
+        caller_names = check_getcontact_info(phone_data["e164"])
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Searching social profiles by phone...")
+        social_profiles = check_phone_social_profiles(phone_data["e164"])
+        progress.advance(main_task)
+
         progress.update(main_task, description="Checking phone reputation...")
         reputation = check_phone_reputation(phone_data["e164"])
         progress.advance(main_task)
@@ -453,6 +667,7 @@ def run_phone_scan(phone_input: str):
         progress.advance(main_task)
 
         progress.update(main_task, description="Building report...")
+        progress.advance(main_task)
         progress.advance(main_task)
 
     report.display_key_value("Number Information", {
@@ -516,6 +731,70 @@ def run_phone_scan(phone_input: str):
                         "bright_cyan",
                     )
 
+    # Caller names / personal data
+    if caller_names.get("names"):
+        name_data = {}
+        for i, name in enumerate(caller_names["names"][:10], 1):
+            name_data[f"Name #{i}"] = name
+        report.display_key_value("Identified Names (Caller ID)", name_data, "bright_red")
+
+    if caller_names.get("tags"):
+        tag_data = {}
+        for i, tag in enumerate(caller_names["tags"][:10], 1):
+            tag_data[f"Comment #{i}"] = tag
+        report.display_key_value("Phone Comments/Tags", tag_data, "yellow")
+
+    # Leak data
+    if leaks.get("found") and leaks.get("sources"):
+        console.print(f"[bold red]LEAKS FOUND: {len(leaks['sources'])} sources[/bold red]")
+        rows = []
+        for s in leaks["sources"][:20]:
+            rows.append([
+                s.get("name", "Unknown"),
+                s.get("source", "N/A"),
+                s.get("date", "N/A"),
+                str(s.get("data_types", "N/A"))[:80],
+            ])
+        report.display_section_table(
+            "Leak Database Results",
+            rows,
+            ["Database", "Source", "Date", "Leaked Data Types"],
+            "red",
+        )
+
+    if leaks.get("personal_data"):
+        report.display_key_value("Personal Data from Leaks", leaks["personal_data"], "bright_red")
+
+    # VK results
+    if vk_results.get("found") and vk_results.get("profiles"):
+        console.print(f"[bold bright_cyan]VK PROFILES FOUND: {len(vk_results['profiles'])}[/bold bright_cyan]")
+        rows = []
+        for p in vk_results["profiles"][:10]:
+            rows.append([
+                p.get("name", "Unknown"),
+                p.get("url", "N/A"),
+                p.get("photo", "N/A")[:80] if p.get("photo") else "N/A",
+            ])
+        report.display_section_table(
+            "VK Profiles (by phone)",
+            rows,
+            ["Name", "URL", "Photo"],
+            "bright_cyan",
+        )
+
+    # Social profile search results
+    if social_profiles.get("profiles"):
+        rows = []
+        for p in social_profiles["profiles"]:
+            status = "Accessible" if p.get("accessible") else "Unavailable"
+            rows.append([p.get("platform", ""), status, p.get("url", "")])
+        report.display_section_table(
+            "Social Profile Search Links",
+            rows,
+            ["Platform", "Status", "Search URL"],
+            "bright_magenta",
+        )
+
     if reputation.get("data"):
         report.display_key_value("Phone Reputation", reputation["data"], "bright_red")
 
@@ -540,6 +819,9 @@ def run_phone_scan(phone_input: str):
         "Carrier": carrier["carrier"],
         "Type": carrier["type"],
         "Messengers Found": len(found_messengers),
+        "Identified Names": len(caller_names.get("names", [])),
+        "Leaks Found": len(leaks.get("sources", [])),
+        "VK Profiles": len(vk_results.get("profiles", [])),
         "APIs Checked": (1 if veriphone["checked"] else 0) + (1 if numverify["checked"] else 0),
         "Spam Reports": reputation.get("spam_reports", 0),
         "OSINT Links Generated": sum(len(v) for v in osint_links.values()),
@@ -550,6 +832,10 @@ def run_phone_scan(phone_input: str):
     report.add_section("veriphone", veriphone)
     report.add_section("numverify", numverify)
     report.add_section("messengers", {"results": [{"platform": m["platform"], "exists": m["exists"], "data": m.get("data", {})} for m in messengers]})
+    report.add_section("leaks", leaks)
+    report.add_section("vk_profiles", vk_results)
+    report.add_section("caller_names", caller_names)
+    report.add_section("social_search", social_profiles)
     report.add_section("reputation", reputation)
     report.set_stats(stats)
     report.display_summary()

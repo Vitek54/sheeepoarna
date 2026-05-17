@@ -384,8 +384,8 @@ def check_hibp(email: str) -> dict:
 
 
 def check_leak_lookup(email: str) -> dict:
-    """Check alternative breach databases."""
-    result = {"sources": []}
+    """Check alternative breach databases with detailed leak info."""
+    result = {"sources": [], "detailed": [], "personal_data": {}}
     try:
         resp = get(f"https://api.xposedornot.com/v1/check-email/{email}", timeout=10)
         if resp and resp.status_code == 200:
@@ -399,6 +399,115 @@ def check_leak_lookup(email: str) -> dict:
                         result["sources"].append({"name": b.get("name", "Unknown"), "source": "XposedOrNot"})
     except Exception:
         pass
+
+    try:
+        resp = get(f"https://api.xposedornot.com/v1/breach-analytics?email={email}", timeout=10)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            exposed = data.get("ExposedBreaches", {})
+            if exposed:
+                breaches_details = exposed.get("breaches_details", [])
+                for bd in breaches_details[:20]:
+                    if isinstance(bd, dict):
+                        detail = {
+                            "name": bd.get("breach", "Unknown"),
+                            "domain": bd.get("domain", "N/A"),
+                            "date": bd.get("xposed_date", "N/A"),
+                            "data_types": bd.get("xposed_data", "N/A"),
+                            "records": str(bd.get("xposed_records", "N/A")),
+                            "industry": bd.get("industry", "N/A"),
+                            "password_risk": bd.get("password_risk", "N/A"),
+                        }
+                        result["detailed"].append(detail)
+
+                metrics = data.get("BreachMetrics", {})
+                if metrics:
+                    risk = metrics.get("risk", [])
+                    if risk and len(risk) >= 4:
+                        result["personal_data"]["Risk Score"] = str(risk[0].get("risk_score", "N/A")) if isinstance(risk[0], dict) else str(risk[0])
+
+                paste_summary = data.get("PastesSummary", {})
+                if paste_summary and paste_summary.get("cnt"):
+                    result["personal_data"]["Paste Appearances"] = str(paste_summary.get("cnt", 0))
+                    sources = paste_summary.get("sources", [])
+                    if sources:
+                        result["personal_data"]["Paste Sources"] = ", ".join(str(s) for s in sources[:5])
+    except Exception:
+        pass
+
+    return result
+
+
+def check_email_leaks_detailed(email: str) -> dict:
+    """Check for detailed leak information - what fields were leaked."""
+    result = {"leaked_fields": [], "data": {}}
+
+    try:
+        resp = get(f"https://api.xposedornot.com/v1/breach-analytics?email={email}", timeout=10)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            exposed = data.get("ExposedBreaches", {})
+            if exposed:
+                all_data_types = set()
+                breaches_details = exposed.get("breaches_details", [])
+                for bd in breaches_details:
+                    if isinstance(bd, dict):
+                        xposed_data = bd.get("xposed_data", "")
+                        if isinstance(xposed_data, str):
+                            for field in xposed_data.split(","):
+                                field = field.strip()
+                                if field:
+                                    all_data_types.add(field)
+                        elif isinstance(xposed_data, list):
+                            all_data_types.update(xposed_data)
+
+                result["leaked_fields"] = sorted(all_data_types)
+
+                field_categories = {
+                    "personal": ["Names", "Name", "First Name", "Last Name", "Full Name", "Gender", "DOB", "Date of Birth", "Age", "Nationalities"],
+                    "credentials": ["Passwords", "Password", "Hashed Passwords", "Password Hints", "Security Questions"],
+                    "contact": ["Email Addresses", "Emails", "Phone Numbers", "Phone", "Physical Addresses", "Address"],
+                    "financial": ["Credit Cards", "Bank Accounts", "Financial Data", "Payment Methods"],
+                    "social": ["Social Media Profiles", "Usernames", "User IDs", "Profile Photos"],
+                    "location": ["IP Addresses", "Geolocation", "GPS Coordinates", "Country", "City"],
+                }
+
+                for category, fields in field_categories.items():
+                    found = [f for f in all_data_types if any(kw.lower() in f.lower() for kw in fields)]
+                    if found:
+                        result["data"][f"Leaked ({category})"] = ", ".join(found)
+    except Exception:
+        pass
+
+    return result
+
+
+def check_email_vk_search(email: str) -> dict:
+    """Search VK for profiles linked to this email."""
+    result = {"found": False, "profiles": []}
+    local_part = email.split("@")[0]
+
+    try:
+        resp = get(f"https://vk.com/search?c%5Bsection%5D=people&c%5Bq%5D={email}", timeout=12)
+        if resp and resp.status_code == 200:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(resp.text, "html.parser")
+            people = soup.select(".people_row, .si_body")
+            for person in people[:5]:
+                name_el = person.select_one(".si_owner a, .people_cell a")
+                if name_el:
+                    profile = {
+                        "name": name_el.get_text(strip=True),
+                        "url": name_el.get("href", ""),
+                    }
+                    img_el = person.select_one("img")
+                    if img_el and img_el.get("src"):
+                        profile["photo"] = img_el["src"]
+                    result["profiles"].append(profile)
+                    result["found"] = True
+    except Exception:
+        pass
+
     return result
 
 
@@ -596,7 +705,7 @@ def run_email_scan(email: str):
         BarColumn(bar_width=30, style="cyan", complete_style="bright_cyan"),
         console=console,
     ) as progress:
-        main_task = progress.add_task("Email Intelligence Scan", total=11)
+        main_task = progress.add_task("Email Intelligence Scan", total=13)
 
         progress.update(main_task, description="Analyzing email format...")
         email_info = get_email_info(email)
@@ -636,6 +745,14 @@ def run_email_scan(email: str):
         progress.update(main_task, description="Checking email reputation...")
         emailrep = check_emailrep(email)
         disify = check_disify(email)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Analyzing leaked data fields...")
+        leaks_detailed = check_email_leaks_detailed(email)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Searching VK by email...")
+        vk_search = check_email_vk_search(email)
         progress.advance(main_task)
 
         progress.update(main_task, description="Checking registrations on sites...")
@@ -746,6 +863,47 @@ def run_email_scan(email: str):
         rows = [[s["name"], s["source"]] for s in leaks["sources"]]
         report.display_section_table("Additional Leak Sources", rows, ["Database", "Source"], "red")
 
+    # Detailed leak info
+    if leaks.get("detailed"):
+        rows = []
+        for d in leaks["detailed"][:20]:
+            rows.append([
+                d.get("name", "N/A"),
+                d.get("domain", "N/A"),
+                d.get("date", "N/A"),
+                str(d.get("data_types", "N/A"))[:60],
+                d.get("records", "N/A"),
+            ])
+        report.display_section_table(
+            "Detailed Breach Info",
+            rows,
+            ["Breach", "Domain", "Date", "Leaked Data Types", "Records"],
+            "red",
+        )
+
+    if leaks.get("personal_data"):
+        report.display_key_value("Leak Analytics", leaks["personal_data"], "bright_red")
+
+    # Leaked fields analysis
+    if leaks_detailed.get("leaked_fields"):
+        console.print(f"[bold red]LEAKED DATA TYPES: {len(leaks_detailed['leaked_fields'])} types found across all breaches[/bold red]")
+        field_data = {"All Leaked Fields": ", ".join(leaks_detailed["leaked_fields"])}
+        if leaks_detailed.get("data"):
+            field_data.update(leaks_detailed["data"])
+        report.display_key_value("Leaked Data Analysis", field_data, "red")
+
+    # VK search results
+    if vk_search.get("found") and vk_search.get("profiles"):
+        console.print(f"[bold bright_cyan]VK PROFILES FOUND: {len(vk_search['profiles'])}[/bold bright_cyan]")
+        rows = []
+        for p in vk_search["profiles"]:
+            rows.append([
+                p.get("name", "Unknown"),
+                p.get("url", "N/A"),
+                p.get("photo", "N/A")[:80] if p.get("photo") else "N/A",
+            ])
+        report.display_section_table("VK Profiles (by email)", rows, ["Name", "URL", "Photo"], "bright_cyan")
+
     # Registrations
     found_registrations = [r for r in registrations if r.get("registered")]
     if found_registrations:
@@ -766,6 +924,9 @@ def run_email_scan(email: str):
         "Disposable": 1 if disposable["is_disposable"] else 0,
         "Breaches (HIBP)": len(hibp.get("breaches", [])),
         "Additional Leaks": len(leaks.get("sources", [])),
+        "Detailed Breaches": len(leaks.get("detailed", [])),
+        "Leaked Data Types": len(leaks_detailed.get("leaked_fields", [])),
+        "VK Profiles Found": len(vk_search.get("profiles", [])),
         "Registrations Found": len(found_registrations),
         "Possible Usernames": len(possible_usernames),
     }
@@ -777,6 +938,8 @@ def run_email_scan(email: str):
     report.add_section("gravatar", gravatar)
     report.add_section("breaches", hibp)
     report.add_section("additional_leaks", leaks)
+    report.add_section("leaked_fields", leaks_detailed)
+    report.add_section("vk_search", vk_search)
     report.add_section("email_reputation", emailrep)
     report.add_section("registrations", {"found": [r["name"] for r in found_registrations]})
     report.add_section("osint_links", osint_links)

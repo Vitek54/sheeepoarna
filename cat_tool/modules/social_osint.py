@@ -256,6 +256,84 @@ def check_keybase_profile(username: str) -> dict:
     return result
 
 
+def check_vk_profile(username: str) -> dict:
+    """Deep check VK profile - extract name, photo, city, status."""
+    result = {"exists": False, "data": {}}
+    try:
+        resp = get(f"https://vk.com/{username}", timeout=12)
+        if resp and resp.status_code == 200:
+            body = resp.text
+            if 'class="page_name"' in body or 'class="op_header"' in body:
+                result["exists"] = True
+                soup = BeautifulSoup(body, "html.parser")
+
+                name_el = soup.select_one(".page_name, h1.op_header, h2.op_header")
+                if name_el:
+                    result["data"]["Name"] = name_el.get_text(strip=True)
+
+                status_el = soup.select_one(".current_text, .pp_status")
+                if status_el:
+                    status = status_el.get_text(strip=True)[:200]
+                    if status:
+                        result["data"]["Status"] = status
+
+                photo_el = soup.select_one(".page_avatar_img, img.pp_img")
+                if photo_el and photo_el.get("src"):
+                    result["data"]["Photo"] = photo_el["src"]
+
+                info_rows = soup.select(".profile_info_row, .pp_info_row")
+                for row in info_rows[:15]:
+                    label_el = row.select_one(".label, .pp_info_label")
+                    value_el = row.select_one(".labeled, .pp_info_value")
+                    if label_el and value_el:
+                        label = label_el.get_text(strip=True).rstrip(":")
+                        value = value_el.get_text(strip=True)[:200]
+                        if label and value:
+                            result["data"][label] = value
+
+                online_el = soup.select_one(".profile_online_lv, .pp_last_activity")
+                if online_el:
+                    result["data"]["Last Seen"] = online_el.get_text(strip=True)
+
+                result["data"]["Profile URL"] = f"https://vk.com/{username}"
+    except Exception:
+        pass
+    return result
+
+
+def check_telegram_profile(username: str) -> dict:
+    """Deep check Telegram profile via t.me."""
+    result = {"exists": False, "data": {}}
+    try:
+        resp = get(f"https://t.me/{username}", timeout=10)
+        if resp and resp.status_code == 200:
+            body = resp.text
+            if "tgme_page_title" in body or 'class="tgme_page_photo_image"' in body:
+                result["exists"] = True
+                soup = BeautifulSoup(body, "html.parser")
+
+                title_el = soup.select_one(".tgme_page_title span")
+                if title_el:
+                    result["data"]["Name"] = title_el.get_text(strip=True)
+
+                desc_el = soup.select_one(".tgme_page_description")
+                if desc_el:
+                    result["data"]["Bio"] = desc_el.get_text(strip=True)[:300]
+
+                photo_el = soup.select_one(".tgme_page_photo_image")
+                if photo_el and photo_el.get("src"):
+                    result["data"]["Avatar"] = photo_el["src"]
+
+                extra_el = soup.select_one(".tgme_page_extra")
+                if extra_el:
+                    result["data"]["Extra"] = extra_el.get_text(strip=True)
+
+                result["data"]["Profile URL"] = f"https://t.me/{username}"
+    except Exception:
+        pass
+    return result
+
+
 async def check_social_profile(session: aiohttp.ClientSession, platform_key: str, username: str) -> dict:
     """Check if username exists on a social platform."""
     platform = SOCIAL_PLATFORMS[platform_key]
@@ -405,6 +483,14 @@ def run_social_scan(username: str):
     if keybase_deep["exists"]:
         report.display_key_value("Keybase Deep Profile", keybase_deep["data"], "bright_magenta")
 
+    vk_deep = check_vk_profile(username)
+    if vk_deep["exists"]:
+        report.display_key_value("VK Deep Profile", vk_deep["data"], "bright_cyan")
+
+    telegram_deep = check_telegram_profile(username)
+    if telegram_deep["exists"]:
+        report.display_key_value("Telegram Deep Profile", telegram_deep["data"], "bright_cyan")
+
     additional_links = {
         "Google Search": f"https://www.google.com/search?q=%22{username}%22",
         "Yandex Search": f"https://yandex.ru/search/?text=%22{username}%22",
@@ -414,6 +500,8 @@ def run_social_scan(username: str):
         "IntelX": f"https://intelx.io/?s={username}",
         "WhatsMyName": f"https://whatsmyname.app/?q={username}",
         "NameCheckr": f"https://www.namecheckr.com/lookup/{username}",
+        "VK Search": f"https://vk.com/search?c%5Bsection%5D=people&c%5Bq%5D={username}",
+        "OK.ru Search": f"https://ok.ru/search?st.query={username}&st.cmd=searchResult&st.mode=Users",
     }
     report.display_key_value("Additional Research Links", additional_links, "bright_yellow")
 
@@ -426,6 +514,8 @@ def run_social_scan(username: str):
         "GitLab Deep Profile": "Yes" if gitlab_deep["exists"] else "No",
         "Dev.to Deep Profile": "Yes" if devto_deep["exists"] else "No",
         "Keybase Deep Profile": "Yes" if keybase_deep["exists"] else "No",
+        "VK Deep Profile": "Yes" if vk_deep["exists"] else "No",
+        "Telegram Deep Profile": "Yes" if telegram_deep["exists"] else "No",
     }
 
     report.add_section("social_profiles", {"found": [{"platform": r["platform"], "url": r["url"]} for r in found]})
@@ -439,6 +529,10 @@ def run_social_scan(username: str):
         report.add_section("devto_deep", devto_deep["data"])
     if keybase_deep["exists"]:
         report.add_section("keybase_deep", keybase_deep["data"])
+    if vk_deep["exists"]:
+        report.add_section("vk_deep", vk_deep["data"])
+    if telegram_deep["exists"]:
+        report.add_section("telegram_deep", telegram_deep["data"])
     report.set_stats(stats)
     report.display_summary()
 
