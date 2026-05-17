@@ -22,11 +22,12 @@ def show_main_menu() -> str:
     menu_table.add_column("Description", style="white")
     menu_table.add_column("Details", style="dim")
 
-    menu_table.add_row("[1]", "Email Intelligence", "Validate, providers, breaches, registrations")
-    menu_table.add_row("[2]", "Username Hunt", "Search across 100+ platforms")
-    menu_table.add_row("[3]", "Social Media Scan", "Deep social media profiling")
+    menu_table.add_row("[1]", "Email Intelligence", "IP geo, SMTP, breaches, reputation, registrations")
+    menu_table.add_row("[2]", "Username Hunt", "Search 100+ platforms + profile data extraction")
+    menu_table.add_row("[3]", "Social Media Scan", "Deep profiling GitHub/Reddit/GitLab/Keybase/Dev.to")
     menu_table.add_row("[4]", "Steam OSINT", "Full Steam account intelligence")
-    menu_table.add_row("[5]", "Full Dossier", "All modules combined scan")
+    menu_table.add_row("[5]", "Phone OSINT", "Russian numbers, carrier, Telegram/WhatsApp/Viber")
+    menu_table.add_row("[6]", "Full Dossier", "All modules combined scan")
     menu_table.add_row("", "", "")
     menu_table.add_row("[0]", "Exit", "")
 
@@ -39,7 +40,7 @@ def show_main_menu() -> str:
     ))
 
     console.print()
-    choice = console.input("[bold bright_cyan]  > Select option [0-5]: [/bold bright_cyan]")
+    choice = console.input("[bold bright_cyan]  > Select option [0-6]: [/bold bright_cyan]")
     return choice.strip()
 
 

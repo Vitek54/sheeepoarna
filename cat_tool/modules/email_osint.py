@@ -2,15 +2,21 @@
 
 Performs comprehensive email intelligence gathering:
 - Email validation & provider detection
-- MX record analysis
-- Gravatar lookup
-- Registration checks on 100+ websites
-- Breach database lookup
-- Domain WHOIS intelligence
+- MX record analysis & DNS intelligence
+- Domain IP geolocation (ip-api.com)
+- SMTP verification
+- Disposable email detection
+- Gravatar lookup with full profile extraction
+- Breach database lookup (HIBP + alternatives)
+- Email reputation scoring
+- Registration checks on multiple websites
+- OSINT research links generation
 """
 
 import hashlib
 import re
+import smtplib
+import socket
 import asyncio
 from typing import Optional
 
@@ -70,6 +76,19 @@ EMAIL_PROVIDERS = {
     "ukr.net": {"name": "UKR.NET", "country": "UA", "type": "Free"},
     "i.ua": {"name": "I.UA Mail", "country": "UA", "type": "Free"},
     "meta.ua": {"name": "Meta.ua Mail", "country": "UA", "type": "Free"},
+}
+
+DISPOSABLE_DOMAINS = {
+    "tempmail.com", "guerrillamail.com", "guerrillamail.net", "throwaway.email",
+    "temp-mail.org", "fakeinbox.com", "sharklasers.com", "guerrillamailblock.com",
+    "grr.la", "guerrillamail.info", "mailinator.com", "maildrop.cc",
+    "dispostable.com", "yopmail.com", "yopmail.fr", "nada.email",
+    "tempail.com", "tmpmail.net", "tmpmail.org", "bupmail.com",
+    "trashmail.com", "trashmail.me", "trashmail.net", "mohmal.com",
+    "getnada.com", "emailondeck.com", "tempr.email", "discard.email",
+    "mailnesia.com", "spamgourmet.com", "mytemp.email", "throwam.com",
+    "crazymailing.com", "10minutemail.com", "minutemail.com", "emailfake.com",
+    "mailnator.com", "anonbox.net", "mailcatch.com", "inboxkitten.com",
 }
 
 REGISTRATION_SITES = [
@@ -164,8 +183,133 @@ def check_domain_records(domain: str) -> dict:
     return result
 
 
+def check_disposable(domain: str) -> dict:
+    """Check if email domain is a disposable/temporary email service."""
+    result = {"is_disposable": False, "source": "N/A"}
+    if domain.lower() in DISPOSABLE_DOMAINS:
+        result["is_disposable"] = True
+        result["source"] = "Built-in database"
+        return result
+    try:
+        resp = get(f"https://open.kickbox.com/v1/disposable/{domain}", timeout=8)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            if data.get("disposable"):
+                result["is_disposable"] = True
+                result["source"] = "Kickbox API"
+                return result
+    except Exception:
+        pass
+    try:
+        resp = get(f"https://disposable.debounce.io/?email=test@{domain}", timeout=8)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            if data.get("disposable") == "true" or data.get("disposable") is True:
+                result["is_disposable"] = True
+                result["source"] = "Debounce API"
+                return result
+    except Exception:
+        pass
+    return result
+
+
+def check_domain_ip_geo(domain: str) -> dict:
+    """Get IP address of the email domain and geolocate it."""
+    result = {"ip": None, "geo": {}}
+    try:
+        ip = socket.gethostbyname(domain)
+        result["ip"] = ip
+    except socket.gaierror:
+        return result
+    try:
+        resp = get(
+            f"http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query",
+            timeout=8,
+        )
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "success":
+                result["geo"] = {
+                    "IP": data.get("query", ip),
+                    "Country": data.get("country", "N/A"),
+                    "Country Code": data.get("countryCode", "N/A"),
+                    "Region": data.get("regionName", "N/A"),
+                    "City": data.get("city", "N/A"),
+                    "ZIP": data.get("zip", "N/A"),
+                    "Latitude": str(data.get("lat", "N/A")),
+                    "Longitude": str(data.get("lon", "N/A")),
+                    "Timezone": data.get("timezone", "N/A"),
+                    "ISP": data.get("isp", "N/A"),
+                    "Organization": data.get("org", "N/A"),
+                    "AS": data.get("as", "N/A"),
+                }
+    except Exception:
+        pass
+    if not result["geo"] and result["ip"]:
+        try:
+            resp = get(f"https://ipapi.co/{result['ip']}/json/", timeout=8)
+            if resp and resp.status_code == 200:
+                data = resp.json()
+                if not data.get("error"):
+                    result["geo"] = {
+                        "IP": result["ip"],
+                        "Country": data.get("country_name", "N/A"),
+                        "Country Code": data.get("country_code", "N/A"),
+                        "Region": data.get("region", "N/A"),
+                        "City": data.get("city", "N/A"),
+                        "ZIP": data.get("postal", "N/A"),
+                        "Latitude": str(data.get("latitude", "N/A")),
+                        "Longitude": str(data.get("longitude", "N/A")),
+                        "Timezone": data.get("timezone", "N/A"),
+                        "ISP": data.get("org", "N/A"),
+                        "Organization": data.get("org", "N/A"),
+                        "AS": data.get("asn", "N/A"),
+                    }
+        except Exception:
+            pass
+    return result
+
+
+def check_smtp_verification(email: str, mx_records: list[dict]) -> dict:
+    """Verify email existence via SMTP handshake."""
+    result = {"verified": False, "status": "Unknown", "smtp_banner": "N/A", "details": ""}
+    if not mx_records:
+        result["status"] = "No MX records"
+        return result
+    mx_host = mx_records[0]["server"]
+    try:
+        smtp = smtplib.SMTP(timeout=10)
+        smtp.connect(mx_host, 25)
+        result["smtp_banner"] = smtp.ehlo_resp.decode("utf-8", errors="ignore")[:200] if smtp.ehlo_resp else "N/A"
+        smtp.ehlo("cat-tool.local")
+        smtp.mail("check@cat-tool.local")
+        code, msg = smtp.rcpt(email)
+        if code == 250:
+            result["verified"] = True
+            result["status"] = "Exists (250 OK)"
+        elif code == 550:
+            result["status"] = "Not found (550)"
+        elif code == 451:
+            result["status"] = "Greylisted (451)"
+        elif code == 452:
+            result["status"] = "Mailbox full (452)"
+        else:
+            result["status"] = f"Code {code}"
+        result["details"] = msg.decode("utf-8", errors="ignore")[:200]
+        smtp.quit()
+    except smtplib.SMTPConnectError:
+        result["status"] = "Connection refused"
+    except smtplib.SMTPServerDisconnected:
+        result["status"] = "Server disconnected"
+    except TimeoutError:
+        result["status"] = "Timeout"
+    except Exception as e:
+        result["status"] = f"Error: {type(e).__name__}"
+    return result
+
+
 def check_gravatar(email: str) -> dict:
-    """Check Gravatar for the email."""
+    """Check Gravatar for the email with full profile extraction."""
     md5_hash = email_to_gravatar_hash(email)
     result = {"exists": False, "profile_url": None, "avatar_url": None, "data": {}}
 
@@ -184,9 +328,29 @@ def check_gravatar(email: str) -> dict:
                 "location": entry.get("currentLocation", "N/A"),
                 "about": entry.get("aboutMe", "N/A"),
             }
+            if entry.get("name"):
+                name_data = entry["name"]
+                full_name = f"{name_data.get('givenName', '')} {name_data.get('familyName', '')}".strip()
+                if full_name:
+                    result["data"]["full_name"] = full_name
+            if entry.get("phoneNumbers"):
+                result["data"]["phones"] = [
+                    {"type": p.get("type", ""), "value": p.get("value", "")}
+                    for p in entry["phoneNumbers"]
+                ]
+            if entry.get("emails"):
+                result["data"]["emails"] = [
+                    {"value": e.get("value", ""), "primary": e.get("primary", False)}
+                    for e in entry["emails"]
+                ]
+            if entry.get("ims"):
+                result["data"]["ims"] = [
+                    {"type": im.get("type", ""), "value": im.get("value", "")}
+                    for im in entry["ims"]
+                ]
             if entry.get("accounts"):
                 result["data"]["linked_accounts"] = [
-                    {"service": acc.get("shortname", ""), "url": acc.get("url", "")}
+                    {"service": acc.get("shortname", ""), "url": acc.get("url", ""), "username": acc.get("username", "")}
                     for acc in entry["accounts"]
                 ]
             if entry.get("urls"):
@@ -206,11 +370,7 @@ def check_gravatar(email: str) -> dict:
 def check_hibp(email: str) -> dict:
     """Check Have I Been Pwned for breaches (public API)."""
     result = {"checked": True, "breaches": [], "paste_count": 0}
-
-    headers = {
-        **DEFAULT_HEADERS,
-        "Accept": "application/json",
-    }
+    headers = {**DEFAULT_HEADERS, "Accept": "application/json"}
     resp = get(f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}?truncateResponse=true", headers=headers)
     if resp and resp.status_code == 200:
         try:
@@ -220,7 +380,75 @@ def check_hibp(email: str) -> dict:
             pass
     elif resp and resp.status_code == 404:
         result["breaches"] = []
+    return result
 
+
+def check_leak_lookup(email: str) -> dict:
+    """Check alternative breach databases."""
+    result = {"sources": []}
+    try:
+        resp = get(f"https://api.xposedornot.com/v1/check-email/{email}", timeout=10)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            breaches = data.get("breaches", [])
+            if isinstance(breaches, list) and breaches:
+                for b in breaches[:20]:
+                    if isinstance(b, str):
+                        result["sources"].append({"name": b, "source": "XposedOrNot"})
+                    elif isinstance(b, dict):
+                        result["sources"].append({"name": b.get("name", "Unknown"), "source": "XposedOrNot"})
+    except Exception:
+        pass
+    return result
+
+
+def check_emailrep(email: str) -> dict:
+    """Check email reputation via emailrep.io."""
+    result = {"checked": False, "data": {}}
+    try:
+        headers = {**DEFAULT_HEADERS, "Accept": "application/json"}
+        resp = get(f"https://emailrep.io/{email}", headers=headers, timeout=10)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            result["checked"] = True
+            details = data.get("details", {})
+            result["data"] = {
+                "Reputation": data.get("reputation", "N/A"),
+                "Suspicious": str(data.get("suspicious", "N/A")),
+                "References": str(data.get("references", "N/A")),
+                "Blacklisted": str(details.get("blacklisted", "N/A")),
+                "Malicious Activity": str(details.get("malicious_activity", "N/A")),
+                "Credentials Leaked": str(details.get("credentials_leaked", "N/A")),
+                "Data Breach": str(details.get("data_breach", "N/A")),
+                "Spam": str(details.get("spam", "N/A")),
+                "Free Provider": str(details.get("free_provider", "N/A")),
+                "Deliverable": str(details.get("deliverable", "N/A")),
+                "Valid MX": str(details.get("valid_mx", "N/A")),
+                "Spoofable": str(details.get("spoofable", "N/A")),
+                "SPF Strict": str(details.get("spf_strict", "N/A")),
+                "DMARC Enforced": str(details.get("dmarc_enforced", "N/A")),
+                "Profiles": ", ".join(details.get("profiles", [])) or "N/A",
+            }
+    except Exception:
+        pass
+    return result
+
+
+def check_disify(email: str) -> dict:
+    """Check email via disify.com API."""
+    result = {"checked": False, "data": {}}
+    try:
+        resp = get(f"https://disify.com/api/email/{email}", timeout=8)
+        if resp and resp.status_code == 200:
+            data = resp.json()
+            result["checked"] = True
+            result["data"] = {
+                "Format Valid": str(data.get("format", "N/A")),
+                "Disposable": str(data.get("disposable", "N/A")),
+                "DNS Valid": str(data.get("dns", "N/A")),
+            }
+    except Exception:
+        pass
     return result
 
 
@@ -331,6 +559,26 @@ def generate_possible_usernames(email: str) -> list[str]:
     return list(dict.fromkeys(usernames))
 
 
+def generate_email_osint_links(email: str) -> dict:
+    """Generate OSINT research links for the email."""
+    local_part = email.split("@")[0]
+    md5_hash = email_to_gravatar_hash(email)
+    return {
+        "Google Search": f"https://www.google.com/search?q=%22{email}%22",
+        "Yandex Search": f"https://yandex.ru/search/?text=%22{email}%22",
+        "DuckDuckGo": f"https://duckduckgo.com/?q=%22{email}%22",
+        "HIBP": f"https://haveibeenpwned.com/account/{email}",
+        "Hunter.io": f"https://hunter.io/email-verifier/{email}",
+        "Gravatar": f"https://gravatar.com/{md5_hash}",
+        "Emailrep.io": f"https://emailrep.io/{email}",
+        "Google (username)": f"https://www.google.com/search?q=%22{local_part}%22",
+        "Wayback Machine": f"https://web.archive.org/web/*/{email}",
+        "IntelX": f"https://intelx.io/?s={email}",
+        "Dehashed": f"https://www.dehashed.com/search?query={email}",
+        "Epieos": f"https://epieos.com/?q={email}",
+    }
+
+
 def run_email_scan(email: str):
     """Run comprehensive email OSINT scan."""
     show_module_header("Email Intelligence", "")
@@ -340,6 +588,7 @@ def run_email_scan(email: str):
         return
 
     report = Report(email, "Email OSINT")
+    domain = email.split("@")[1]
 
     with Progress(
         SpinnerColumn(style="bold cyan"),
@@ -347,7 +596,7 @@ def run_email_scan(email: str):
         BarColumn(bar_width=30, style="cyan", complete_style="bright_cyan"),
         console=console,
     ) as progress:
-        main_task = progress.add_task("Email Intelligence Scan", total=6)
+        main_task = progress.add_task("Email Intelligence Scan", total=11)
 
         progress.update(main_task, description="Analyzing email format...")
         email_info = get_email_info(email)
@@ -356,16 +605,37 @@ def run_email_scan(email: str):
         progress.advance(main_task)
 
         progress.update(main_task, description="Checking DNS/MX records...")
-        mx_records = check_mx_records(email_info["domain"])
-        dns_records = check_domain_records(email_info["domain"])
+        mx_records = check_mx_records(domain)
+        dns_records = check_domain_records(domain)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Geolocating domain IP...")
+        domain_geo = check_domain_ip_geo(domain)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Checking disposable status...")
+        disposable = check_disposable(domain)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="SMTP verification...")
+        smtp_result = check_smtp_verification(email, mx_records)
         progress.advance(main_task)
 
         progress.update(main_task, description="Searching Gravatar...")
         gravatar = check_gravatar(email)
         progress.advance(main_task)
 
-        progress.update(main_task, description="Checking breaches...")
+        progress.update(main_task, description="Checking breaches (HIBP)...")
         hibp = check_hibp(email)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Checking leak databases...")
+        leaks = check_leak_lookup(email)
+        progress.advance(main_task)
+
+        progress.update(main_task, description="Checking email reputation...")
+        emailrep = check_emailrep(email)
+        disify = check_disify(email)
         progress.advance(main_task)
 
         progress.update(main_task, description="Checking registrations on sites...")
@@ -373,8 +643,10 @@ def run_email_scan(email: str):
         progress.advance(main_task)
 
         progress.update(main_task, description="Generating report...")
+        osint_links = generate_email_osint_links(email)
         progress.advance(main_task)
 
+    # Display results
     report.display_key_value("Email Information", {
         "Email": email,
         "Local Part": email_info["local_part"],
@@ -384,6 +656,7 @@ def run_email_scan(email: str):
         "Type": email_info["type"],
         "Format Valid": "Yes" if email_info["format_valid"] else "No",
         "Pattern Type": pattern["pattern_type"],
+        "Disposable": "[bold red]YES[/bold red]" if disposable["is_disposable"] else "[green]No[/green]",
     })
 
     if possible_usernames:
@@ -392,6 +665,21 @@ def run_email_scan(email: str):
             f"[white]{', '.join(possible_usernames)}[/white]\n"
         )
 
+    # SMTP verification
+    smtp_color = "bright_green" if smtp_result["verified"] else "yellow"
+    report.display_key_value("SMTP Verification", {
+        "Status": smtp_result["status"],
+        "Verified": "Yes" if smtp_result["verified"] else "No",
+        "SMTP Banner": smtp_result["smtp_banner"][:100] if smtp_result["smtp_banner"] != "N/A" else "N/A",
+    }, smtp_color)
+
+    # Domain IP geolocation
+    if domain_geo.get("geo"):
+        report.display_key_value("Domain IP Geolocation", domain_geo["geo"], "bright_magenta")
+    elif domain_geo.get("ip"):
+        report.display_key_value("Domain IP", {"IP": domain_geo["ip"], "Geolocation": "Could not resolve"}, "yellow")
+
+    # MX Records
     if mx_records:
         rows = [[str(r["priority"]), r["server"]] for r in mx_records]
         report.display_section_table("MX Records", rows, ["Priority", "Mail Server"], "bright_yellow")
@@ -404,6 +692,14 @@ def run_email_scan(email: str):
         if dns_info:
             report.display_key_value("DNS Records", dns_info, "bright_yellow")
 
+    # Email reputation
+    if emailrep.get("checked") and emailrep.get("data"):
+        report.display_key_value("Email Reputation (emailrep.io)", emailrep["data"], "bright_cyan")
+
+    if disify.get("checked") and disify.get("data"):
+        report.display_key_value("Email Validation (disify.com)", disify["data"], "bright_cyan")
+
+    # Gravatar
     if gravatar["exists"]:
         grav_data = {
             "Status": "Found",
@@ -412,23 +708,45 @@ def run_email_scan(email: str):
         }
         if gravatar.get("data"):
             for key, val in gravatar["data"].items():
-                if key not in ("linked_accounts", "urls") and val and val != "N/A":
+                if key not in ("linked_accounts", "urls", "phones", "emails", "ims") and val and val != "N/A":
                     grav_data[key.replace("_", " ").title()] = str(val)
         report.display_key_value("Gravatar Profile", grav_data, "bright_green")
 
         if gravatar.get("data", {}).get("linked_accounts"):
-            rows = [[acc["service"], acc["url"]] for acc in gravatar["data"]["linked_accounts"]]
-            report.display_section_table("Gravatar Linked Accounts", rows, ["Service", "URL"], "bright_green")
+            rows = [[acc.get("service", ""), acc.get("username", ""), acc.get("url", "")] for acc in gravatar["data"]["linked_accounts"]]
+            report.display_section_table("Gravatar Linked Accounts", rows, ["Service", "Username", "URL"], "bright_green")
+
+        if gravatar.get("data", {}).get("phones"):
+            for phone in gravatar["data"]["phones"]:
+                console.print(f"  [bright_green]Phone ({phone.get('type', '')}):[/bright_green] {phone.get('value', 'N/A')}")
+
+        if gravatar.get("data", {}).get("emails"):
+            for em in gravatar["data"]["emails"]:
+                primary = " (primary)" if em.get("primary") else ""
+                console.print(f"  [bright_green]Email{primary}:[/bright_green] {em.get('value', 'N/A')}")
+
+        if gravatar.get("data", {}).get("ims"):
+            for im in gravatar["data"]["ims"]:
+                console.print(f"  [bright_green]IM ({im.get('type', '')}):[/bright_green] {im.get('value', 'N/A')}")
+            console.print()
     else:
         console.print("[dim]Gravatar: No profile found[/dim]\n")
 
+    # Breaches
     if hibp.get("breaches"):
-        console.print(f"[bold red]BREACHES FOUND: {len(hibp['breaches'])}[/bold red]")
+        console.print(f"[bold red]HIBP BREACHES FOUND: {len(hibp['breaches'])}[/bold red]")
         rows = [[b, "Breached"] for b in hibp["breaches"]]
-        report.display_section_table("Data Breaches", rows, ["Service", "Status"], "red")
+        report.display_section_table("Data Breaches (HIBP)", rows, ["Service", "Status"], "red")
     else:
-        console.print("[bold green]No known breaches found[/bold green]\n")
+        console.print("[bold green]HIBP: No known breaches found[/bold green]\n")
 
+    # Alternative leaks
+    if leaks.get("sources"):
+        console.print(f"[bold red]ADDITIONAL LEAKS FOUND: {len(leaks['sources'])}[/bold red]")
+        rows = [[s["name"], s["source"]] for s in leaks["sources"]]
+        report.display_section_table("Additional Leak Sources", rows, ["Database", "Source"], "red")
+
+    # Registrations
     found_registrations = [r for r in registrations if r.get("registered")]
     if found_registrations:
         rows = [[r["name"], "Registered"] for r in found_registrations]
@@ -438,18 +756,30 @@ def run_email_scan(email: str):
     if not_found:
         console.print(f"[dim]Not found on: {', '.join(r['name'] for r in not_found)}[/dim]\n")
 
+    # OSINT links
+    report.display_key_value("OSINT Research Links", osint_links, "bright_yellow")
+
     stats = {
         "MX Records Found": len(mx_records),
         "Gravatar Profile": 1 if gravatar["exists"] else 0,
-        "Breaches": len(hibp.get("breaches", [])),
+        "SMTP Verified": 1 if smtp_result["verified"] else 0,
+        "Disposable": 1 if disposable["is_disposable"] else 0,
+        "Breaches (HIBP)": len(hibp.get("breaches", [])),
+        "Additional Leaks": len(leaks.get("sources", [])),
         "Registrations Found": len(found_registrations),
         "Possible Usernames": len(possible_usernames),
     }
 
     report.add_section("email_info", email_info)
+    report.add_section("domain_geo", domain_geo)
+    report.add_section("smtp_verification", smtp_result)
+    report.add_section("disposable", disposable)
     report.add_section("gravatar", gravatar)
     report.add_section("breaches", hibp)
+    report.add_section("additional_leaks", leaks)
+    report.add_section("email_reputation", emailrep)
     report.add_section("registrations", {"found": [r["name"] for r in found_registrations]})
+    report.add_section("osint_links", osint_links)
     report.set_stats(stats)
     report.display_summary()
 

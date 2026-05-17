@@ -8,6 +8,7 @@ Performs comprehensive username enumeration across 150+ platforms:
 - Dating sites
 - Music & streaming
 - Business & professional
+- Profile data extraction via free APIs
 """
 
 import asyncio
@@ -21,7 +22,7 @@ from rich import box
 
 from cat_tool.core.banner import show_module_header
 from cat_tool.core.report import Report
-from cat_tool.utils.http_client import DEFAULT_HEADERS, run_async
+from cat_tool.utils.http_client import get, DEFAULT_HEADERS, run_async
 
 console = Console()
 
@@ -155,7 +156,218 @@ PLATFORMS = [
 BODY_CHECK_SITES = {
     "Telegram": {"not_found_text": "If you have <strong>Telegram</strong>, you can contact"},
     "Hackernews": {"not_found_text": "No such user."},
+    "Spotify": {"not_found_text": "<title>Spotify</title>"},
+    "Threads": {"not_found_text": "Sorry, this page isn"},
+    "Bluesky": {"not_found_text": "Profile not found"},
+    "CashApp": {"not_found_text": "Cash App is the easiest"},
+    "Notion": {"not_found_text": "Notion – The all-in-one"},
 }
+
+
+def extract_github_data(username: str) -> dict:
+    """Extract real profile data from GitHub API."""
+    result = {}
+    resp = get(f"https://api.github.com/users/{username}", timeout=10)
+    if resp and resp.status_code == 200:
+        data = resp.json()
+        result = {
+            "Display Name": data.get("name") or "N/A",
+            "Bio": data.get("bio") or "N/A",
+            "Location": data.get("location") or "N/A",
+            "Company": data.get("company") or "N/A",
+            "Blog": data.get("blog") or "N/A",
+            "Repos": str(data.get("public_repos", 0)),
+            "Followers": str(data.get("followers", 0)),
+            "Following": str(data.get("following", 0)),
+            "Created": (data.get("created_at") or "N/A")[:10],
+            "Twitter": data.get("twitter_username") or "N/A",
+        }
+    return result
+
+
+def extract_reddit_data(username: str) -> dict:
+    """Extract real profile data from Reddit API."""
+    result = {}
+    headers = {**DEFAULT_HEADERS, "Accept": "application/json"}
+    resp = get(f"https://www.reddit.com/user/{username}/about.json", headers=headers, timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json().get("data", {})
+            if data.get("name"):
+                result = {
+                    "Display Name": data.get("subreddit", {}).get("title") or "N/A",
+                    "Comment Karma": str(data.get("comment_karma", 0)),
+                    "Link Karma": str(data.get("link_karma", 0)),
+                    "Total Karma": str(data.get("total_karma", 0)),
+                    "Verified": str(data.get("verified", False)),
+                    "Has Verified Email": str(data.get("has_verified_email", False)),
+                }
+        except Exception:
+            pass
+    return result
+
+
+def extract_gitlab_data(username: str) -> dict:
+    """Extract real profile data from GitLab API."""
+    result = {}
+    resp = get(f"https://gitlab.com/api/v4/users?username={username}", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            users = resp.json()
+            if users and len(users) > 0:
+                data = users[0]
+                result = {
+                    "Display Name": data.get("name") or "N/A",
+                    "Username": data.get("username") or "N/A",
+                    "Bio": data.get("bio") or "N/A",
+                    "Location": data.get("location") or "N/A",
+                    "Website": data.get("website_url") or "N/A",
+                    "Created": (data.get("created_at") or "N/A")[:10],
+                }
+        except Exception:
+            pass
+    return result
+
+
+def extract_lichess_data(username: str) -> dict:
+    """Extract real profile data from Lichess API."""
+    result = {}
+    resp = get(f"https://lichess.org/api/user/{username}", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            result = {
+                "Username": data.get("username", "N/A"),
+                "Created": str(data.get("createdAt", "N/A")),
+                "Last Seen": str(data.get("seenAt", "N/A")),
+                "Games Played": str(data.get("count", {}).get("all", 0)),
+                "Wins": str(data.get("count", {}).get("win", 0)),
+                "Losses": str(data.get("count", {}).get("loss", 0)),
+                "Draws": str(data.get("count", {}).get("draw", 0)),
+            }
+            perfs = data.get("perfs", {})
+            for mode in ["blitz", "rapid", "bullet", "classical"]:
+                if mode in perfs:
+                    result[f"Rating ({mode})"] = str(perfs[mode].get("rating", "N/A"))
+        except Exception:
+            pass
+    return result
+
+
+def extract_chess_com_data(username: str) -> dict:
+    """Extract real profile data from Chess.com API."""
+    result = {}
+    resp = get(f"https://api.chess.com/pub/player/{username}", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            result = {
+                "Username": data.get("username", "N/A"),
+                "Name": data.get("name") or "N/A",
+                "Location": data.get("location") or "N/A",
+                "Country": data.get("country", "N/A").split("/")[-1] if data.get("country") else "N/A",
+                "Followers": str(data.get("followers", 0)),
+                "Status": data.get("status", "N/A"),
+                "Joined": str(data.get("joined", "N/A")),
+                "Last Online": str(data.get("last_online", "N/A")),
+            }
+        except Exception:
+            pass
+    return result
+
+
+def extract_keybase_data(username: str) -> dict:
+    """Extract real profile data from Keybase API."""
+    result = {}
+    resp = get(f"https://keybase.io/_/api/1.0/user/lookup.json?usernames={username}", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            them = data.get("them", [{}])
+            if them and len(them) > 0:
+                user = them[0]
+                profile = user.get("profile", {})
+                result = {
+                    "Username": user.get("basics", {}).get("username", "N/A"),
+                    "Full Name": profile.get("full_name") or "N/A",
+                    "Bio": profile.get("bio") or "N/A",
+                    "Location": profile.get("location") or "N/A",
+                }
+                proofs = user.get("proofs_summary", {}).get("all", [])
+                if proofs:
+                    linked = [f"{p.get('proof_type', '')}: {p.get('nametag', '')}" for p in proofs[:5]]
+                    result["Linked Accounts"] = "; ".join(linked)
+        except Exception:
+            pass
+    return result
+
+
+def extract_hackernews_data(username: str) -> dict:
+    """Extract real profile data from HN API."""
+    result = {}
+    resp = get(f"https://hacker-news.firebaseio.com/v0/user/{username}.json", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            if data:
+                result = {
+                    "Username": data.get("id", "N/A"),
+                    "Karma": str(data.get("karma", 0)),
+                    "About": (data.get("about") or "N/A")[:200],
+                    "Created": str(data.get("created", "N/A")),
+                }
+        except Exception:
+            pass
+    return result
+
+
+def extract_devto_data(username: str) -> dict:
+    """Extract profile data from Dev.to API."""
+    result = {}
+    resp = get(f"https://dev.to/api/users/by_username?url={username}", timeout=10)
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            result = {
+                "Username": data.get("username", "N/A"),
+                "Name": data.get("name") or "N/A",
+                "Bio": (data.get("summary") or "N/A")[:200],
+                "Location": data.get("location") or "N/A",
+                "Joined": (data.get("joined_at") or "N/A")[:10],
+                "Website": data.get("website_url") or "N/A",
+                "GitHub": data.get("github_username") or "N/A",
+                "Twitter": data.get("twitter_username") or "N/A",
+            }
+        except Exception:
+            pass
+    return result
+
+
+PROFILE_EXTRACTORS = {
+    "GitHub": extract_github_data,
+    "Reddit": extract_reddit_data,
+    "GitLab": extract_gitlab_data,
+    "Lichess": extract_lichess_data,
+    "Chess.com": extract_chess_com_data,
+    "Keybase": extract_keybase_data,
+    "Hackernews": extract_hackernews_data,
+    "Dev.to": extract_devto_data,
+}
+
+
+def generate_username_osint_links(username: str) -> dict:
+    """Generate OSINT research links for the username."""
+    return {
+        "Google Search": f"https://www.google.com/search?q=%22{username}%22",
+        "Yandex Search": f"https://yandex.ru/search/?text=%22{username}%22",
+        "DuckDuckGo": f"https://duckduckgo.com/?q=%22{username}%22",
+        "Google Images": f"https://www.google.com/search?tbm=isch&q=%22{username}%22",
+        "Wayback Machine": f"https://web.archive.org/web/*/{username}*",
+        "NameCheckr": f"https://www.namecheckr.com/lookup/{username}",
+        "Namechk": f"https://namechk.com/search/{username}",
+        "IntelX": f"https://intelx.io/?s={username}",
+        "WhatsMyName": f"https://whatsmyname.app/?q={username}",
+    }
 
 
 async def check_platform(session: aiohttp.ClientSession, platform: dict, username: str) -> dict:
@@ -288,10 +500,28 @@ def run_username_scan(username: str):
     else:
         console.print("[dim]No accounts found on any platform[/dim]\n")
 
+    # Extract profile data from platforms with APIs
+    found_names = {r["name"] for r in found}
+    profile_data = {}
+    for platform_name, extractor in PROFILE_EXTRACTORS.items():
+        if platform_name in found_names:
+            data = extractor(username)
+            if data:
+                profile_data[platform_name] = data
+
+    if profile_data:
+        for platform_name, data in profile_data.items():
+            report.display_key_value(f"{platform_name} Profile Data", data, "bright_magenta")
+
+    # OSINT research links
+    osint_links = generate_username_osint_links(username)
+    report.display_key_value("OSINT Research Links", osint_links, "bright_yellow")
+
     stats = {
         "Total Platforms Checked": len(PLATFORMS),
         "Accounts Found": len(found),
         "Not Found": len(not_found),
+        "Profiles Extracted": len(profile_data),
     }
     category_counts = {}
     for r in found:
@@ -302,6 +532,8 @@ def run_username_scan(username: str):
         stats[f"  {cat}"] = count
 
     report.add_section("found_accounts", {"accounts": [{"name": r["name"], "url": r["url"], "category": r["category"]} for r in found]})
+    report.add_section("profile_data", profile_data)
+    report.add_section("osint_links", osint_links)
     report.set_stats(stats)
     report.display_summary()
 

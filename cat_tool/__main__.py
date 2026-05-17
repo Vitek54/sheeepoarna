@@ -22,6 +22,7 @@ from cat_tool.modules.email_osint import run_email_scan
 from cat_tool.modules.username_osint import run_username_scan
 from cat_tool.modules.social_osint import run_social_scan
 from cat_tool.modules.steam_osint import run_steam_scan
+from cat_tool.modules.phone_osint import run_phone_scan
 
 console = Console()
 
@@ -45,6 +46,10 @@ def run_full_dossier():
 
         show_separator()
         run_social_scan(local_part)
+    elif target.startswith("+7") or target.startswith("87") or target.startswith("89") or (target.startswith("7") and len(target) == 11) or (target.startswith("8") and len(target) == 11):
+        console.print("\n[bold]Detected: Phone number[/bold]")
+        show_separator()
+        run_phone_scan(target)
     elif target.startswith("STEAM_") or target.startswith("[U:") or target.startswith("7656119") or "steamcommunity.com" in target:
         console.print("\n[bold]Detected: Steam ID[/bold]")
         show_separator()
@@ -101,11 +106,16 @@ def main():
                 press_enter()
 
             elif choice == "5":
+                phone_input = get_input("Enter phone number (Russian: +7/8...)")
+                run_phone_scan(phone_input)
+                press_enter()
+
+            elif choice == "6":
                 run_full_dossier()
                 press_enter()
 
             else:
-                show_error("Invalid option. Please select 0-5.")
+                show_error("Invalid option. Please select 0-6.")
 
             show_banner()
 

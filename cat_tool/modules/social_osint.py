@@ -178,6 +178,84 @@ def check_reddit_profile(username: str) -> dict:
     return result
 
 
+def check_gitlab_profile(username: str) -> dict:
+    """Deep check GitLab profile via public API."""
+    result = {"exists": False, "data": {}}
+    resp = get(f"https://gitlab.com/api/v4/users?username={username}")
+    if resp and resp.status_code == 200:
+        try:
+            users = resp.json()
+            if users and len(users) > 0:
+                data = users[0]
+                result["exists"] = True
+                result["data"] = {
+                    "Username": data.get("username", "N/A"),
+                    "Display Name": data.get("name") or "N/A",
+                    "Bio": data.get("bio") or "N/A",
+                    "Location": data.get("location") or "N/A",
+                    "Website": data.get("website_url") or "N/A",
+                    "Created": (data.get("created_at") or "N/A")[:10],
+                    "Avatar": data.get("avatar_url", "N/A"),
+                    "Profile URL": data.get("web_url", "N/A"),
+                }
+        except (ValueError, KeyError):
+            pass
+    return result
+
+
+def check_devto_profile(username: str) -> dict:
+    """Deep check Dev.to profile via API."""
+    result = {"exists": False, "data": {}}
+    resp = get(f"https://dev.to/api/users/by_username?url={username}")
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            if data.get("username"):
+                result["exists"] = True
+                result["data"] = {
+                    "Username": data.get("username", "N/A"),
+                    "Name": data.get("name") or "N/A",
+                    "Bio": (data.get("summary") or "N/A")[:200],
+                    "Location": data.get("location") or "N/A",
+                    "Joined": (data.get("joined_at") or "N/A")[:10],
+                    "Website": data.get("website_url") or "N/A",
+                    "GitHub": data.get("github_username") or "N/A",
+                    "Twitter": data.get("twitter_username") or "N/A",
+                    "Profile URL": f"https://dev.to/{username}",
+                }
+        except (ValueError, KeyError):
+            pass
+    return result
+
+
+def check_keybase_profile(username: str) -> dict:
+    """Deep check Keybase profile via API."""
+    result = {"exists": False, "data": {}}
+    resp = get(f"https://keybase.io/_/api/1.0/user/lookup.json?usernames={username}")
+    if resp and resp.status_code == 200:
+        try:
+            data = resp.json()
+            them = data.get("them", [{}])
+            if them and len(them) > 0:
+                user = them[0]
+                profile = user.get("profile", {})
+                result["exists"] = True
+                result["data"] = {
+                    "Username": user.get("basics", {}).get("username", "N/A"),
+                    "Full Name": profile.get("full_name") or "N/A",
+                    "Bio": profile.get("bio") or "N/A",
+                    "Location": profile.get("location") or "N/A",
+                    "Profile URL": f"https://keybase.io/{username}",
+                }
+                proofs = user.get("proofs_summary", {}).get("all", [])
+                if proofs:
+                    linked = [f"{p.get('proof_type', '')}: {p.get('nametag', '')}" for p in proofs[:10]]
+                    result["data"]["Linked Accounts"] = "; ".join(linked)
+        except (ValueError, KeyError):
+            pass
+    return result
+
+
 async def check_social_profile(session: aiohttp.ClientSession, platform_key: str, username: str) -> dict:
     """Check if username exists on a social platform."""
     platform = SOCIAL_PLATFORMS[platform_key]
@@ -311,12 +389,31 @@ def run_social_scan(username: str):
     if reddit_deep["exists"]:
         report.display_key_value("Reddit Deep Profile", reddit_deep["data"], "bright_yellow")
 
+    # Additional deep profiles
+    progress_console = Console()
+    progress_console.print("[dim]Checking additional deep profiles...[/dim]")
+
+    gitlab_deep = check_gitlab_profile(username)
+    if gitlab_deep["exists"]:
+        report.display_key_value("GitLab Deep Profile", gitlab_deep["data"], "bright_magenta")
+
+    devto_deep = check_devto_profile(username)
+    if devto_deep["exists"]:
+        report.display_key_value("Dev.to Deep Profile", devto_deep["data"], "bright_magenta")
+
+    keybase_deep = check_keybase_profile(username)
+    if keybase_deep["exists"]:
+        report.display_key_value("Keybase Deep Profile", keybase_deep["data"], "bright_magenta")
+
     additional_links = {
         "Google Search": f"https://www.google.com/search?q=%22{username}%22",
         "Yandex Search": f"https://yandex.ru/search/?text=%22{username}%22",
-        "Wayback Machine": f"https://web.archive.org/web/*/{username}*",
-        "Google Images": f"https://www.google.com/search?tbm=isch&q=%22{username}%22",
         "DuckDuckGo": f"https://duckduckgo.com/?q=%22{username}%22",
+        "Google Images": f"https://www.google.com/search?tbm=isch&q=%22{username}%22",
+        "Wayback Machine": f"https://web.archive.org/web/*/{username}*",
+        "IntelX": f"https://intelx.io/?s={username}",
+        "WhatsMyName": f"https://whatsmyname.app/?q={username}",
+        "NameCheckr": f"https://www.namecheckr.com/lookup/{username}",
     }
     report.display_key_value("Additional Research Links", additional_links, "bright_yellow")
 
@@ -326,6 +423,9 @@ def run_social_scan(username: str):
         "Not Found": len(not_found),
         "GitHub Deep Profile": "Yes" if github_deep["exists"] else "No",
         "Reddit Deep Profile": "Yes" if reddit_deep["exists"] else "No",
+        "GitLab Deep Profile": "Yes" if gitlab_deep["exists"] else "No",
+        "Dev.to Deep Profile": "Yes" if devto_deep["exists"] else "No",
+        "Keybase Deep Profile": "Yes" if keybase_deep["exists"] else "No",
     }
 
     report.add_section("social_profiles", {"found": [{"platform": r["platform"], "url": r["url"]} for r in found]})
@@ -333,6 +433,12 @@ def run_social_scan(username: str):
         report.add_section("github_deep", github_deep["data"])
     if reddit_deep["exists"]:
         report.add_section("reddit_deep", reddit_deep["data"])
+    if gitlab_deep["exists"]:
+        report.add_section("gitlab_deep", gitlab_deep["data"])
+    if devto_deep["exists"]:
+        report.add_section("devto_deep", devto_deep["data"])
+    if keybase_deep["exists"]:
+        report.add_section("keybase_deep", keybase_deep["data"])
     report.set_stats(stats)
     report.display_summary()
 

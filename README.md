@@ -14,24 +14,53 @@
 
 ### Email Intelligence
 - Email format validation & provider detection (40+ providers)
-- MX/DNS record analysis
-- Gravatar profile lookup (with linked accounts extraction)
-- Data breach checking (Have I Been Pwned)
-- Registration checks across multiple services
+- **Domain IP geolocation** (ip-api.com / ipapi.co) — country, city, ISP, timezone
+- **SMTP verification** — mailbox existence check via SMTP handshake
+- **Disposable email detection** — built-in database (40+ domains) + Kickbox & Debounce APIs
+- MX/DNS record analysis (A, AAAA, TXT, NS, MX)
+- **Email reputation** scoring (emailrep.io) — spam, blacklist, breach, deliverability
+- **Email validation** (disify.com) — format, DNS, disposable checks
+- Gravatar profile lookup (full extraction: name, phones, emails, IMs, linked accounts)
+- Data breach checking (Have I Been Pwned + XposedOrNot)
+- Registration checks across multiple services (GitHub, Spotify, Twitter, Duolingo, etc.)
 - Email pattern analysis & username generation
+- **12 OSINT research links** (Google, Yandex, HIBP, Hunter.io, IntelX, Dehashed, Epieos, etc.)
 
 ### Username Hunt
 - Scans **100+ platforms** simultaneously
 - Categories: Social Media, Gaming, Dev, Music, Video, Photo/Art, Professional, Forums, Shopping, RU Platforms
-- Async parallel scanning for speed
-- Categorized results with direct URLs
+- Async parallel scanning with 30 concurrent connections
+- **Profile data extraction** via free APIs for found accounts:
+  - GitHub (name, bio, location, company, repos, followers, created date)
+  - Reddit (karma, verified email, account age)
+  - GitLab (name, bio, location, website, created date)
+  - Lichess (ratings, games played, wins/losses)
+  - Chess.com (name, location, followers, status)
+  - Keybase (name, bio, location, linked accounts/proofs)
+  - Hacker News (karma, about, created date)
+  - Dev.to (name, bio, location, GitHub/Twitter links)
+- Improved false positive detection (body content checks for Spotify, Threads, Bluesky, CashApp, Notion)
+- **9 OSINT research links** (Google, Yandex, IntelX, WhatsMyName, NameCheckr, etc.)
 
 ### Social Media Intelligence
 - Deep profiling across 18+ social platforms
-- GitHub deep profile (repos, followers, bio, company, linked accounts)
-- Reddit deep profile (karma, verification, account age)
+- **GitHub** deep profile (repos, followers, bio, company, linked accounts)
+- **Reddit** deep profile (karma, verification, account age)
+- **GitLab** deep profile (name, bio, location, website, created date)
+- **Dev.to** deep profile (name, bio, GitHub/Twitter links)
+- **Keybase** deep profile (name, bio, linked cryptographic proofs)
 - Cross-platform presence mapping
-- Auto-generated research links (Google, Yandex, Wayback Machine)
+- **8 OSINT research links** (Google, Yandex, IntelX, WhatsMyName, NameCheckr, etc.)
+
+### Phone OSINT (Russian Numbers)
+- **Russian phone number validation** (+7 / 8 prefixes, 10-digit format)
+- **Carrier detection** from prefix database (100+ carriers: МТС, Билайн, Мегафон, Tele2, etc.)
+- **Region detection** for landline numbers (Moscow, SPb, Novosibirsk, etc.)
+- **Messenger availability checks**: Telegram, WhatsApp, Viber
+- **Free API validation**: veriphone.io, numverify (apilayer.net)
+- **Caller ID service links**: Truecaller, NumBuster, GetContact, Sync.me
+- **Phone reputation check**: neberitrubku.ru spam reports
+- **10+ OSINT research links** (Google, Yandex, Truecaller, numbuster, phone-num.ru, etc.)
 
 ### Steam OSINT
 - **SteamID conversion** (SteamID64, SteamID, SteamID3, Account ID)
@@ -45,7 +74,7 @@
 
 ### Full Dossier Mode
 - Combines all modules for comprehensive target analysis
-- Auto-detects input type (email/username/Steam ID)
+- Auto-detects input type (email / username / phone number / Steam ID)
 - Cross-references findings across platforms
 
 ## Installation
@@ -86,7 +115,8 @@ python -m cat_tool
 # [2] Username Hunt
 # [3] Social Media Scan
 # [4] Steam OSINT
-# [5] Full Dossier (all modules)
+# [5] Phone OSINT
+# [6] Full Dossier (all modules)
 # [0] Exit
 ```
 
