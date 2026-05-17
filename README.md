@@ -74,7 +74,6 @@ python -m cat_tool
 - `beautifulsoup4` + `lxml` - HTML parsing
 - `dnspython` - DNS lookups
 - `aiohttp` - Async HTTP for parallel scanning
-- `pyfiglet` - ASCII art
 
 ## Usage
 
