@@ -155,7 +155,14 @@ class Report:
         if self.summary_stats:
             for key, value in self.summary_stats.items():
                 summary.append(f"  {key}: ", style="bold")
-                color = "bright_green" if value > 0 else "dim"
+                if isinstance(value, (int, float)):
+                    color = "bright_green" if value > 0 else "dim"
+                elif isinstance(value, str) and value in ("Yes", "True", "Found"):
+                    color = "bright_green"
+                elif isinstance(value, str) and value in ("No", "False", "Not Found", "N/A"):
+                    color = "dim"
+                else:
+                    color = "bright_white"
                 summary.append(f"{value}\n", style=color)
 
         console.print(Panel(
