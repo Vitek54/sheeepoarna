@@ -102,16 +102,29 @@
     reveals.forEach(function (el) { observer.observe(el); });
   }
 
-  /* ---------- CAT CURSOR ---------- */
-  var cursorToggle = document.getElementById('cursor-toggle');
-  var isCat = false;
+  /* ---------- EASTER EGG ---------- */
+  var heroAvatar = document.getElementById('hero-avatar');
+  var easterToast = document.getElementById('easter-toast');
+  var clickCount = 0;
+  var clickTimer = null;
+  var CLICK_THRESHOLD = 7;
 
-  cursorToggle.addEventListener('click', function () {
-    isCat = !isCat;
-    document.body.classList.toggle('cat-cursor', isCat);
-    cursorToggle.style.transform = 'scale(0.85)';
-    setTimeout(function () { cursorToggle.style.transform = ''; }, 150);
-  });
+  if (heroAvatar && easterToast) {
+    heroAvatar.addEventListener('click', function (e) {
+      e.stopPropagation();
+      clickCount++;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(function () { clickCount = 0; }, 2000);
+
+      if (clickCount >= CLICK_THRESHOLD) {
+        clickCount = 0;
+        easterToast.classList.add('show');
+        setTimeout(function () {
+          easterToast.classList.remove('show');
+        }, 2000);
+      }
+    });
+  }
 
   /* ---------- LIGHTBOX ---------- */
   var lightbox = document.getElementById('lightbox');
@@ -194,19 +207,6 @@
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
-  });
-
-  /* ---------- PAW CLICK EFFECT ---------- */
-  document.addEventListener('click', function (e) {
-    var paw = document.createElement('div');
-    paw.innerHTML = '<svg width="24" height="24" viewBox="0 0 32 32"><path fill="rgba(167,139,250,0.4)" d="M16 16C26 16 30 22 26 30C22 34 10 34 6 30C2 22 6 16 16 16Z"/><circle cx="8" cy="12" r="4" fill="rgba(167,139,250,0.4)"/><circle cx="16" cy="6" r="4" fill="rgba(167,139,250,0.4)"/><circle cx="24" cy="12" r="4" fill="rgba(167,139,250,0.4)"/></svg>';
-    paw.style.cssText = 'position:fixed;left:' + (e.clientX - 12) + 'px;top:' + (e.clientY - 12) + 'px;pointer-events:none;z-index:99999;transition:all 0.6s ease-out;transform:scale(0.5);opacity:1;';
-    document.body.appendChild(paw);
-    requestAnimationFrame(function () {
-      paw.style.transform = 'scale(1.3)';
-      paw.style.opacity = '0';
-    });
-    setTimeout(function () { paw.remove(); }, 600);
   });
 
 })();

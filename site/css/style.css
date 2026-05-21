@@ -174,35 +174,30 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   50% { opacity: 1; }
 }
 
-/* ===== CURSOR TOGGLE ===== */
-.cursor-toggle {
+/* ===== EASTER EGG TOAST ===== */
+.easter-toast {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.6);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: var(--transition);
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%) translateX(100px);
+  background: rgba(167, 139, 250, 0.15);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 16px;
+  padding: 16px 28px;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent);
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+  box-shadow: 0 8px 32px rgba(167, 139, 250, 0.2);
 }
 
-.cursor-toggle:hover {
-  background: rgba(0,0,0,0.8);
-  color: #fff;
-  transform: scale(1.1);
-  border-color: var(--border-hover);
-}
-
-body.cat-cursor,
-body.cat-cursor * {
-  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g transform='translate(2,4)'><path fill='%23ffffff' stroke='%23000000' stroke-width='2' stroke-linejoin='round' d='M2 12 L6 2 L14 8 L22 2 L26 12 C30 26 2 26 2 12Z'/><path fill='%23ffb6c1' d='M6 5 L11 9 L5 11Z'/><path fill='%23ffb6c1' d='M22 5 L17 9 L23 11Z'/><circle cx='10' cy='16' r='2' fill='%23000000'/><circle cx='18' cy='16' r='2' fill='%23000000'/><path fill='none' stroke='%23000000' stroke-width='1.5' stroke-linecap='round' d='M12 20Q14 22 16 20M16 20Q18 22 20 20'/></g></svg>") 8 6, auto !important;
+.easter-toast.show {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
 }
 
 /* ===== NAVBAR ===== */
@@ -410,9 +405,15 @@ body.cat-cursor * {
 
 .floating-logo {
   position: absolute;
-  opacity: 0.5;
-  filter: blur(0.5px);
+  opacity: 0.55;
   transition: opacity 2s ease;
+}
+
+.floating-logo-img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 20px rgba(167,139,250,0.2));
 }
 
 .floating-logo--obsidian {
