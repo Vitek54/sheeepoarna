@@ -51,6 +51,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ===== SELECTION ===== */
 ::selection { background: rgba(167, 139, 250, 0.3); color: #fff; }
 
+/* ===== PARTICLES CANVAS ===== */
+.particles-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
 /* ===== AMBIENT BACKGROUND ===== */
 .ambient-wrapper {
   position: fixed;
@@ -531,11 +540,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   gap: 10px;
+  background: linear-gradient(135deg, #f0f0f5 0%, #a78bfa 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .hero-verified {
   color: var(--accent);
   opacity: 0.8;
+  -webkit-text-fill-color: initial;
 }
 
 .hero-tagline {
@@ -677,6 +691,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 800;
   letter-spacing: -0.5px;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, #f0f0f5, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .section-desc {
@@ -707,6 +725,21 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border-color: var(--border-hover);
   transform: translateY(-4px);
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.team-card:has(.badge-owner):hover {
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 30px rgba(167, 139, 250, 0.12);
+}
+
+.team-card:has(.badge-cherub):hover {
+  border-color: rgba(200, 200, 220, 0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 30px rgba(200, 200, 220, 0.08);
+}
+
+.team-card:has(.badge-angels):hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 30px rgba(255, 255, 255, 0.06);
 }
 
 .team-card-top {
@@ -1397,9 +1430,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ===== REVEAL ANIMATIONS ===== */
 [data-reveal] {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.section {
+  transition: opacity 0.6s ease;
 }
 
 [data-reveal].visible {
