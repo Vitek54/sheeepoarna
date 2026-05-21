@@ -137,11 +137,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: 2px;
-  color: var(--accent);
+  overflow: hidden;
   animation: float 3s ease-in-out infinite;
+}
+
+.preloader-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 24px;
 }
 
 .preloader-text {
@@ -245,10 +249,14 @@ body.cat-cursor * {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: 1px;
+  overflow: hidden;
+}
+
+.nav-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 .nav-logo-text {
@@ -1230,10 +1238,14 @@ body.cat-cursor * {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: 1px;
+  overflow: hidden;
+}
+
+.footer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .footer-brand-name {
