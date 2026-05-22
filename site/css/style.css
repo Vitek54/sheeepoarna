@@ -654,8 +654,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ===== PHONE MOCKUP ===== */
 .phone-mockup {
   position: absolute;
-  right: 5%;
-  top: 50%;
+  right: 4%;
+  top: 42%;
   transform: translateY(-50%) translateX(100px);
   opacity: 0;
   z-index: 2;
@@ -669,7 +669,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 .phone-mockup-img {
-  width: 280px;
+  width: 240px;
   height: auto;
   display: block;
   filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 40px rgba(167, 139, 250, 0.08));
