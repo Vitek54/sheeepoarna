@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Angels</title>
+  <meta name="description" content="White-Angels — community of developers and security specialists. Open Source Intelligence & Development Network.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/jpeg" href="https://i.ibb.co/LXYFp2dT/photo-2026-05-16-01-36-47.jpg">
+</head>
+<body>
+
+  <!-- ===== PRELOADER / INTRO ===== -->
+  <div id="preloader" class="preloader">
+    <div class="preloader-bg">
+      <img src="videos/0232e271439751.5bc5aaad0a790.gif" alt="" class="preloader-bg-img">
+    </div>
+    <audio id="glitch-sound" loop autoplay>
+      <source src="videos/Glitch Sound Effect.mp4" type="video/mp4">
+    </audio>
+    <div class="preloader-content">
+      <div class="preloader-text">CLICK TO ENTER</div>
+      <div class="preloader-hint">White-Angels</div>
+    </div>
+  </div>
+
+  <!-- ===== AMBIENT BACKGROUND ===== -->
+  <div class="ambient-wrapper">
+    <img src="videos/From KlickPin CF 30 Clever Digital Detox Ideas - Pin-530298924875624219.gif" alt="" class="ambient-bg">
+    <div class="ambient-overlay"></div>
+    <div class="noise-overlay"></div>
+  </div>
+
+  <!-- ===== PARTICLES CANVAS ===== -->
+  <canvas id="particles-canvas" class="particles-canvas"></canvas>
+
+  <!-- ===== NAVIGATION (Top Bar) ===== -->
+  <nav id="navbar" class="navbar">
+    <div class="nav-inner">
+      <a href="#hero" class="nav-logo">
+        <span class="nav-logo-text">White-Angels</span>
+      </a>
+      <div class="nav-links">
+        <a href="#team" class="nav-link active" data-section="team">Team</a>
+        <a href="#partners" class="nav-link" data-section="partners">Partners</a>
+        <a href="#about" class="nav-link" data-section="about">About</a>
+        <a href="#cases" class="nav-link" data-section="cases">Cases</a>
+      </div>
+      <a href="https://t.me/unholyrealism" target="_blank" rel="noopener" class="nav-cta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Telegram
+      </a>
+      <button class="nav-burger" id="nav-burger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== MOBILE MENU ===== -->
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="#team" class="mobile-link" data-section="team">Team</a>
+    <a href="#partners" class="mobile-link" data-section="partners">Partners</a>
+    <a href="#about" class="mobile-link" data-section="about">About</a>
+    <a href="#cases" class="mobile-link" data-section="cases">Cases</a>
+    <a href="https://t.me/unholyrealism" target="_blank" rel="noopener" class="mobile-link tg-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      Telegram Channel
+    </a>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main id="main-content" class="main-content hidden">
+
+    <!-- HERO -->
+    <section id="hero" class="hero-section">
+      <!-- 3D Floating Logos Background -->
+      <div class="hero-floating-logos">
+        <div class="floating-logo floating-logo--obsidian">
+          <img src="https://i.ibb.co/DDLbCqsJ/Copilot-20260522-010057.png" alt="Obsidian" class="floating-logo-img">
+        </div>
+        <div class="floating-logo floating-logo--gmail">
+          <img src="https://i.ibb.co/Xw5Lw8z/Copilot-20260522-010401.png" alt="Gmail" class="floating-logo-img">
+        </div>
+        <div class="floating-logo floating-logo--discord">
+          <img src="https://i.ibb.co/gbsbLrkR/Copilot-20260522-010608.png" alt="Discord" class="floating-logo-img">
+        </div>
+        <div class="floating-logo floating-logo--telegram">
+          <img src="https://i.ibb.co/67sW42Ng/Copilot-20260522-010914.png" alt="Telegram" class="floating-logo-img">
+        </div>
+      </div>
+      <div class="hero-inner">
+        <div class="hero-avatar-wrap" data-reveal>
+          <div class="hero-avatar-ring"></div>
+          <div class="hero-avatar-ring hero-avatar-ring--reverse"></div>
+          <img src="https://i.ibb.co/fd9YW3Wz/Copilot-20250909-130341.png" alt="White-Angels" class="hero-avatar" id="hero-avatar">
+          <div class="hero-avatar-glow"></div>
+        </div>
+        <h1 class="hero-title" data-reveal>
+          White-Angels
+          <svg class="hero-verified" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        </h1>
+        <p class="hero-tagline" data-reveal id="hero-tagline"></p>
+        <div class="hero-actions" data-reveal>
+          <a href="https://t.me/unholyrealism" target="_blank" rel="noopener" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            Telegram Channel
+          </a>
+          <a href="#about" class="btn btn-ghost">Learn More</a>
+        </div>
+        <div class="hero-scroll-hint" data-reveal>
+          <div class="scroll-mouse">
+            <div class="scroll-wheel"></div>
+          </div>
+          <span>Scroll to explore</span>
+        </div>
+      </div>
+
+      <!-- Phone Mockup -->
+      <div class="phone-mockup" data-reveal>
+        <img src="phone-mockup.png" alt="iOS Preview" class="phone-mockup-img" loading="lazy">
+        <div class="phone-glow"></div>
+      </div>
+    </section>
+
+    <!-- TEAM -->
+    <section id="team" class="section">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <span class="section-tag">Our People</span>
+          <h2 class="section-title">The Team</h2>
+          <p class="section-desc">The professionals behind White-Angels network</p>
+        </div>
+        <div class="team-grid">
+
+          <!-- Xelviara -->
+          <div class="team-card" data-reveal>
+            <div class="team-card-top">
+              <img src="avatars/xelviara.png" alt="Xelviara" class="team-card-avatar" loading="lazy">
+              <div class="team-card-info">
+                <h3 class="team-card-name">Xelviara</h3>
+                <span class="badge badge-owner">Owner</span>
+              </div>
+            </div>
+            <div class="team-card-links">
+              <a href="https://discord.com/users/xelviara" target="_blank" rel="noopener" class="team-link team-link--discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                xelviara
+              </a>
+              <a href="https://t.me/crythrix" target="_blank" rel="noopener" class="team-link team-link--telegram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                crythrix
+              </a>
+            </div>
+          </div>
+
+          <!-- Sync -->
+          <div class="team-card" data-reveal>
+            <div class="team-card-top">
+              <img src="avatars/sync.png" alt="Sync" class="team-card-avatar" loading="lazy">
+              <div class="team-card-info">
+                <h3 class="team-card-name">Sync</h3>
+                <span class="badge badge-cherub">Cherub</span>
+              </div>
+            </div>
+            <div class="team-card-links">
+              <a href="https://discord.com/users/halfmelt" target="_blank" rel="noopener" class="team-link team-link--discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                halfmelt
+              </a>
+              <a href="https://t.me/halfmelt" target="_blank" rel="noopener" class="team-link team-link--telegram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                halfmelt
+              </a>
+            </div>
+          </div>
+
+          <!-- Glory -->
+          <div class="team-card" data-reveal>
+            <div class="team-card-top">
+              <img src="avatars/glory.png" alt="Glory" class="team-card-avatar" loading="lazy">
+              <div class="team-card-info">
+                <h3 class="team-card-name">Glory</h3>
+                <span class="badge badge-angels">Angels</span>
+              </div>
+            </div>
+            <div class="team-card-links">
+              <a href="https://discord.com/users/gloryvis" target="_blank" rel="noopener" class="team-link team-link--discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                gloryvis
+              </a>
+              <a href="https://t.me/xckhgt" target="_blank" rel="noopener" class="team-link team-link--telegram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                xckhgt
+              </a>
+            </div>
+          </div>
+
+          <!-- Motori -->
+          <div class="team-card" data-reveal>
+            <div class="team-card-top">
+              <img src="avatars/motori.png" alt="Motori" class="team-card-avatar" loading="lazy">
+              <div class="team-card-info">
+                <h3 class="team-card-name">Motori</h3>
+                <span class="badge badge-angels">Angels</span>
+              </div>
+            </div>
+            <div class="team-card-links">
+              <a href="https://discord.com/users/excellentuser" target="_blank" rel="noopener" class="team-link team-link--discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                excellentuser
+              </a>
+              <a href="https://t.me/miakod" target="_blank" rel="noopener" class="team-link team-link--telegram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                miakod
+              </a>
+            </div>
+          </div>
+
+          <!-- dizmoral -->
+          <div class="team-card" data-reveal>
+            <div class="team-card-top">
+              <img src="avatars/dizmoral.png" alt="dizmoral" class="team-card-avatar" loading="lazy">
+              <div class="team-card-info">
+                <h3 class="team-card-name">dizmoral</h3>
+                <span class="badge badge-angels">Angels</span>
+              </div>
+            </div>
+            <div class="team-card-links">
+              <a href="https://discord.com/users/vampbloodlust" target="_blank" rel="noopener" class="team-link team-link--discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                vampbloodlust
+              </a>
+              <a href="https://t.me/evpup" target="_blank" rel="noopener" class="team-link team-link--telegram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                evpup
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- PARTNERS -->
+    <section id="partners" class="section section--alt">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <span class="section-tag">Collaboration</span>
+          <h2 class="section-title">Partners</h2>
+          <p class="section-desc">Trusted organizations in the OSINT ecosystem</p>
+        </div>
+        <div class="partners-grid">
+
+          <a href="https://t.me/Depinfo_R" target="_blank" rel="noopener" class="partner-card" data-reveal>
+            <div class="partner-card-left">
+              <img src="https://i.ibb.co/mCHYT0wY/photo-2026-04-15-23-49-28.jpg" alt="DeepInfo_R" class="partner-avatar" loading="lazy">
+              <div class="partner-info">
+                <h3 class="partner-name">DeepInfo_R</h3>
+                <p class="partner-desc">Joint search &amp; data verification</p>
+                <div class="partner-tags">
+                  <span class="ptag"><span class="ptag-dot ptag-dot--osint"></span>OSINT</span>
+                  <span class="ptag"><span class="ptag-dot ptag-dot--verif"></span>Verification</span>
+                </div>
+              </div>
+            </div>
+            <div class="partner-tg-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </div>
+          </a>
+
+          <a href="https://t.me/analyticame" target="_blank" rel="noopener" class="partner-card" data-reveal>
+            <div class="partner-card-left">
+              <img src="https://i.ibb.co/BVCyc1mp/Analytica.jpg" alt="Analytica" class="partner-avatar" loading="lazy">
+              <div class="partner-info">
+                <h3 class="partner-name">Analytica</h3>
+                <p class="partner-desc">Analytics, digital intelligence &amp; search</p>
+                <div class="partner-tags">
+                  <span class="ptag"><span class="ptag-dot ptag-dot--analytics"></span>Analytics</span>
+                  <span class="ptag"><span class="ptag-dot ptag-dot--geoint"></span>GEOINT</span>
+                </div>
+              </div>
+            </div>
+            <div class="partner-tg-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </div>
+          </a>
+
+          <a href="https://t.me/intelchecks" target="_blank" rel="noopener" class="partner-card" data-reveal>
+            <div class="partner-card-left">
+              <img src="https://i.ibb.co/Ps9BMz4T/photo-2026-04-26-21-10-01.jpg" alt="Intel-Check" class="partner-avatar" loading="lazy">
+              <div class="partner-info">
+                <h3 class="partner-name">Intel-Check</h3>
+                <p class="partner-desc">Active OSINT partner. Fast search, smart analysis.</p>
+                <div class="partner-tags">
+                  <span class="ptag"><span class="ptag-dot ptag-dot--intelx"></span>IntelX</span>
+                  <span class="ptag"><span class="ptag-dot ptag-dot--leakcheck"></span>LeakCheck</span>
+                </div>
+              </div>
+            </div>
+            <div class="partner-tg-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="section">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <span class="section-tag">Who We Are</span>
+          <h2 class="section-title">About</h2>
+        </div>
+
+        <div class="about-quote" data-reveal>
+          <svg class="about-quote-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36">
+            <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1.5.5 1.5 1.5L5 16c-.5 2-1 3-2 5h0z"/>
+            <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1.5.5 1.5 1.5L17 16c-.5 2-1 3-2 5h0z"/>
+          </svg>
+          <p>We offer unique growth directions and help unlock your potential. Stay competitive and find your calling in IT.</p>
+        </div>
+
+        <div class="about-cards">
+          <div class="about-card" data-reveal>
+            <div class="about-card-media">
+              <video autoplay muted loop playsinline>
+                <source src="videos/video1.mp4" type="video/mp4">
+              </video>
+            </div>
+            <div class="about-card-body">
+              <h3>Development</h3>
+              <p>Unique solutions, process optimization &amp; full-lifecycle support.</p>
+            </div>
+          </div>
+          <div class="about-card" data-reveal>
+            <div class="about-card-media about-card-media--classified">
+              <img src="https://i.ibb.co/V03PMf7D/Group-349-1.png" alt="OSINT Case">
+              <div class="classified-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                Classified
+              </div>
+            </div>
+            <div class="about-card-body">
+              <h3>OSINT Investigation</h3>
+              <p>Real cases &mdash; verified chains of connections. Data is redacted.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASES -->
+    <section id="cases" class="section section--alt">
+      <div class="container">
+        <div class="section-header" data-reveal>
+          <span class="section-tag">Our Work</span>
+          <h2 class="section-title">Cases</h2>
+        </div>
+
+        <div class="cases-hero" data-reveal>
+          <div class="cases-hero-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+          </div>
+          <p class="cases-hero-text">
+            Over the past few months we have closed more than <strong>30 major OSINT cases</strong>,
+            including exposing large Discord server creators, finding personal data of offenders,
+            and helping resolve personal matters.
+          </p>
+          <div class="cases-stats">
+            <div class="stat-item">
+              <span class="stat-num" data-count="30">0</span>
+              <span class="stat-label">Cases Closed</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num">2</span>
+              <span class="stat-label">Months Active</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+              <span class="stat-num">100<span class="stat-pct">%</span></span>
+              <span class="stat-label">Team Verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cases-divider" data-reveal>
+          <span>Obsidian Materials</span>
+        </div>
+
+        <div class="cases-grid">
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/W41nk0MN/case1.png" alt="Case 1" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #01</span>
+          </div>
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/DDcg8KJs/case2.png" alt="Case 2" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #02</span>
+          </div>
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/6c256GPC/case3.png" alt="Case 3" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #03</span>
+          </div>
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/qFVzMkm7/case4.png" alt="Case 4" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #04</span>
+          </div>
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/4nCzgMzD/case5.png" alt="Case 5" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #05</span>
+          </div>
+          <div class="case-item" data-reveal>
+            <div class="case-thumb" onclick="openLightbox(this)">
+              <img src="https://i.ibb.co/jdMPv2b/case6.png" alt="Case 6" onerror="this.style.display='none';this.parentElement.classList.add('no-img')">
+              <div class="case-hover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+              <span class="case-badge">Classified</span>
+            </div>
+            <span class="case-label">Case #06</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-top">
+          <div class="footer-brand-col">
+            <div class="footer-brand">
+              <span class="footer-logo"><img src="https://i.ibb.co/LXYFp2dT/photo-2026-05-16-01-36-47.jpg" alt="WA" class="footer-logo-img"></span>
+              <span class="footer-brand-name">White-Angels</span>
+            </div>
+            <p class="footer-slogan">With us, you have a future</p>
+          </div>
+          <div class="footer-col">
+            <h4 class="footer-col-title">Contact</h4>
+            <a href="mailto:support@white-angels.com" class="footer-link footer-link--email">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M2 7l10 7 10-7"/></svg>
+              support@white-angels.com
+            </a>
+          </div>
+          <div class="footer-col">
+            <h4 class="footer-col-title">Social</h4>
+            <div class="footer-socials">
+              <a href="https://t.me/unholyrealism" target="_blank" rel="noopener" class="footer-social footer-social--tg" title="Telegram">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+              </a>
+              <a href="https://discord.com/users/xelviara" target="_blank" rel="noopener" class="footer-social footer-social--dc" title="Discord">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20.317 4.369a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+              </a>
+              <a href="https://github.com/Vitek54" target="_blank" rel="noopener" class="footer-social footer-social--gh" title="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>White-Angels &copy; 2025</span>
+        </div>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" onclick="closeLightbox()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="">
+  </div>
+
+  <!-- Easter egg toast -->
+  <div class="easter-toast" id="easter-toast">:0</div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
