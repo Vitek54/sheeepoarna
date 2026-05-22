@@ -209,6 +209,16 @@
     });
   });
 
+  /* ---------- TAB TITLE EASTER EGG ---------- */
+  var originalTitle = document.title;
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      document.title = 'куда пошёл, иуда';
+    } else {
+      document.title = originalTitle;
+    }
+  });
+
   /* ---------- PARALLAX ON HERO ---------- */
   var floatingLogos = document.querySelector('.hero-floating-logos');
   var heroSection = document.querySelector('.hero-section');
